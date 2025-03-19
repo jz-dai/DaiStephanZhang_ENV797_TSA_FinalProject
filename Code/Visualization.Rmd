@@ -1,0 +1,28 @@
+---
+title: "R Notebook"
+output: pdf
+author: Jingze Dai
+---
+
+
+
+```{r}
+library(here)
+library(ggplot2)
+library(forecast)
+```
+
+```{r}
+header <- read.csv("../Data/noaa_ch4_monthly.csv", skip = 45, header = FALSE)
+header <- header[1, ]
+methane <- read.csv("../Data/noaa_ch4_monthly.csv", skip = 47, header = FALSE)
+colnames(methane) <- header
+```
+
+
+```{r}
+methane_ts <-ts(methane$average_unc, start = c(1983,7), end = c(2023, 12), 
+                frequency = 12)
+autoplot(methane_ts)
+```
+
