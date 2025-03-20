@@ -1,0 +1,84 @@
+---
+title: "Data Wrangling and Visualization"
+output: pdf
+author: Jingze Dai & Rachael Stephan
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r chunks, include=FALSE}
+#set up chunk options
+knitr::opts_chunk$set(echo = TRUE,tidy.opts=list(width.cutoff=80), 
+                      tidy=FALSE) 
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+```{r libraries}
+#retrieve libraries
+library(here)
+library(ggplot2)
+library(forecast)
+```
+
+```{r theme, include=FALSE}
+#create plot theme
+mytheme <- theme_bw(base_size = 10)+
+  theme(axis.title = element_text(size = 10, hjust = 0.5),
+        plot.title.position = "panel",
+        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.25),
+        plot.caption = element_text(hjust = 0),
+        legend.box = "vertical",
+        legend.location = "plot",
+        axis.gridlines = element_line(color = "grey", linewidth = 0.25),
+        axis.ticks = element_line(color = "black", linewidth = 0.5),
+        axis.grid = element_blank())
+
+#set plot theme
+theme_set(mytheme)
+```
+
+```{r data_retrieval}
+#retrieve column names
+header <- read.csv("./Data/Raw/noaa_ch4_monthly.csv", skip = 45, header = FALSE)
+header <- header[1, ]
+
+#retrieve monthly data
+methane <- read.csv("./Data/Raw/noaa_ch4_monthly.csv", skip = 47, header = FALSE)
+
+#set column names
+colnames(methane) <- header
+
+#subset data into training (1983-2021) and test data (2022-2024)
+methane_training <- subset(methane, year <= 2021)
+methane_test <- subset(methane, year >= 2022)
+
+#save data to processed folder
+write.csv(methane, 
+          file = "./Data/Processed/methane_all.csv",
+          row.names=FALSE)
+
+write.csv(methane_test, 
+          file = "./Data/Processed/methane_test.csv",
+          row.names=FALSE)
+
+write.csv(methane_training, 
+          file = "./Data/Processed/methane_training.csv",
+          row.names=FALSE)
+```
+
+
+```{r ts_set}
+#create timeseries object of 
+methane_ts <-ts(methane_training$average, 
+                start = c(1983,7), 
+                end = c(2021, 12), 
+                frequency = 12)
+
+#plot timeseries
+autoplot(methane_ts)+
+  labs(title = "Globally Averaged Atmospheric Methane Concentrations from 1983 to 2021",
+       y = "Methane (ppb)")
+
+```
+
