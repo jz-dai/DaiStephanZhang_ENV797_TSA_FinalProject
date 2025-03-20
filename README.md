@@ -1,4 +1,4 @@
-# DaiStephan_ENV797_TSA_FinalProject
+# DaiStephanZhang_ENV797_TSA_FinalProject
 
 R code and datasets for the final project of ENV797 Spring 2025 for J. Dai and R. Stephan
 
@@ -7,12 +7,17 @@ R code and datasets for the final project of ENV797 Spring 2025 for J. Dai and R
 # Investigators
 
 -   Jingze Dai, Duke University Nicholas School of the Environment,
-    [jd559\@duke.edu](mailto:brock.keller@duke.edu){.email},
+    [jd559@duke.edu],
     contributor
 
 -   Rachael Stephan, Duke University Nicholas School of the Environment,
-    [rachael.stephan\@duke.edu](mailto:rachael.stephan@duke.edu){.email},
+    [rachael.stephan@duke.edu],
     contributor
+
+-   Zuocheng Zhang, Duke Kunshan University,
+    [zz352@duke.edu],
+    contributor
+
     
 # Keywords
 
