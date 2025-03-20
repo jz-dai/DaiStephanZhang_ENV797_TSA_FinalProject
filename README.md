@@ -1,21 +1,21 @@
 # DaiStephanZhang_ENV797_TSA_FinalProject
 
-R code and datasets for the final project of ENV797 Spring 2025 for J. Dai and R. Stephan
+R code and datasets for the final project of ENV797 Spring 2025 for J. Dai, R. Stephan, and Z. Zhang.
 
 # Summary
 
 # Investigators
 
 -   Jingze Dai, Duke University Nicholas School of the Environment,
-    [jd559@duke.edu],
+    [jd559\@duke.edu](mailto:jd559@duke.edu),
     contributor
 
 -   Rachael Stephan, Duke University Nicholas School of the Environment,
-    [rachael.stephan@duke.edu],
+    [rachael.stephan\@duke.edu](mailto:rachael.stephan@duke.edu),
     contributor
 
 -   Zuocheng Zhang, Duke Kunshan University,
-    [zz352@duke.edu],
+    [zz352\@duke.edu](mailto:zz352@duke.edu),
     contributor
 
     
@@ -24,6 +24,14 @@ R code and datasets for the final project of ENV797 Spring 2025 for J. Dai and R
 #climatechange, #greenhousegases, #GHG, #methane, #NOAA, #airquality
 
 # Database Information
+
+Globally averaged methane data used in this analysis was retrieved from [NOAA's page on greenhouse gas trends](https://gml.noaa.gov/ccgg/trends_ch4/). This global averages were obtained by curve fitting and smoothing data from well-mixed marine boundary layer (MBL) air. MBL air is considered representative of the larger atmosphere. More details on this process can be found at [this webpage](https://gml.noaa.gov/ccgg/about/global_means.html).
+
+For this analysis, the contributors:
+
+1.  Wrangled and subset the global averages into training and test data sets.
+
+2.  
 
 # Folder & Data Structure and Naming Conventions
 
