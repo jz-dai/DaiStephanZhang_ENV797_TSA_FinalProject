@@ -1,0 +1,83 @@
+---
+title: "Methane Factor -- Beef production"
+output: pdf
+author: Jingze Dai
+---
+
+
+```{r}
+library(here)
+library(dplyr)
+library(ggplot2)
+library(forecast)
+library(cowplot)
+library(Kendall)
+library(tseries)
+```
+
+```{r}
+#create plot theme
+mytheme <- theme_bw(base_size = 10)+
+  theme(axis.title = element_text(size = 10, hjust = 0.5),
+        plot.title.position = "panel",
+        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.25),
+        plot.caption = element_text(hjust = 0),
+        legend.box = "vertical",
+        legend.location = "plot",
+        axis.gridlines = element_line(color = "grey", linewidth = 0.25),
+        axis.ticks = element_line(color = "black", linewidth = 0.5),
+        axis.grid = element_blank())
+
+#set plot theme
+theme_set(mytheme)
+```
+
+```{r}
+#import data
+beef_production <- read.csv("./Data/Raw/beef_buffalo_production.csv", skip = 23,
+                            header = FALSE)
+
+#set column names
+colnames(beef_production) <- c("Entity", "Code", "Year", "Beef_Production(Tons)")
+
+write.csv(beef_production, 
+          file = "./Data/Processed/beef_production.csv",
+          row.names=FALSE)
+```
+
+
+```{r}
+#create timeseries object
+beef_ts <-ts(beef_production$`Beef_Production(Tons)`, 
+                start = 1983, 
+                end = 2023, 
+                frequency = 1)
+
+#plot timeseries
+autoplot(beef_ts)+
+  labs(title = "Global Beef Production from 1961 to 2023",
+       y = "Beef (tons)")
+```
+
+```{r}
+methane <- read.csv("./Data/Processed/methane_all.csv")
+methane_yearly <- methane %>% 
+  filter(year < 2024) %>% 
+  group_by(year) %>% 
+  summarize(yearly_average = mean(average))
+```
+
+```{r}
+methane_beef <- cbind(methane_yearly, beef_production) 
+methane_beef <- methane_beef %>%
+  select(year, yearly_average, `Beef_Production(Tons)`)
+
+```
+
+```{r}
+cor(methane_beef$`Beef_Production(Tons)`, methane_beef$yearly_average)
+
+ggplot(methane_beef, aes(`Beef_Production(Tons)`, yearly_average)) + 
+  geom_point()
+```
+
