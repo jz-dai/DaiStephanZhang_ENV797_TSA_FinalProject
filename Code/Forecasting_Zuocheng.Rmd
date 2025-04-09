@@ -1,0 +1,69 @@
+---
+title: "Forecasting_Zuocheng"
+author: "Zhang"
+date: "2025-04-09"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+library(dplyr)
+
+```
+
+
+
+# Data processing
+```{r}
+
+## Import data
+social_data <- read.csv("../Data/Raw/social_economic_factors.csv")
+
+
+## Interpolate yearly data to monthly data
+col_names <- colnames(social_data)[-1]
+interpolation_time<- seq(1983, 2023 + 11/12, by = 1/12)
+social_data_monthly <- data.frame(Time = monthly_time)
+
+for (var in col_names) {
+  interpolated <- approx(
+    x = social_data$Time,
+    y = social_data[[var]],
+    xout = interpolation_time
+  )$y
+  
+ social_data_monthly[[var]] <- interpolated
+}
+
+social_data_monthly <- social_data_monthly %>%
+  select(-1) %>%
+  mutate(
+    year = rep(1983:2023, each = 12),
+    month = rep(1:12, times = length(1983:2023))
+  ) %>%
+  filter(year<=2021)
+
+## Export data
+write.csv(social_data_monthly, file = "../Data/Processed/social_economic_factors.csv", row.names=FALSE)
+
+
+```
+
+
+
+
+
+
+# Import Data
+
+```{r}
+methane_all <- read.csv("../Data/Processed/methane_all.csv")
+methane_training <- read.csv("../Data/Processed/methane_training.csv")
+methane_test <- read.csv("../Data/Processed/methane_test.csv")
+
+```
+
