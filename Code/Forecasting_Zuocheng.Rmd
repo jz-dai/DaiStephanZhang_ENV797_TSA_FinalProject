@@ -12,13 +12,165 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 
 library(dplyr)
+library(corrplot)
+library(lubridate)
+
+```
+
+# Import Data - alternative monthly data
+
+```{r}
+
+data_monthly <- read.csv("../Data/Raw/social_economic_factors_alt.csv")
+
+data_monthly_df <- data_monthly %>%
+                        mutate(Date = ymd(Date)) %>%
+                        filter(Date >= ymd("1983-07-01") & Date <= ymd("2024-11-30")) %>%
+                        select(-1)
+
+combined_monthly_df <- cbind(methane_all[4] %>% rename(methane = average) ,data_monthly_df %>% select(-ir))
+
+#combined_monthly_df <- cbind(methane_all[4] %>% rename(methane = average) ,data_monthly_df)
+
+write.csv(combined_monthly_df, file = "../Data/Processed/social_economic_factors_monthly.csv", row.names=FALSE)
+
+
+```
+
+# Import monthly data, data explore
+```{r}
+
+social_data_monthly <- read.csv("../Data/Processed/social_economic_factors_monthly.csv")
+
+corr_data <- cor(social_data_monthly)
+  
+corrplot(corr_data)
+
+model <- lm(methane~ cpi+export+import+ip,social_data_monthly)
+summary(model)
+
+social_data_monthly_ts <- ts(social_data_monthly, start = c(1983,7), frequency = 12)
+
+
+autoplot(social_data_monthly_ts[,-1])
+
+```
+
+# Predicting using monthly data, w/o data processing
+
+```{r}
+
+ts_monthly_train <- window(social_data_monthly_ts, end=c(2021,12))
+
+ts_monthly_test <- window(social_data_monthly_ts, start=c(2022,1))
+
+NN_fit <- nnetar(ts_monthly_train[,1], xreg = ts_monthly_train[,-1],PI=TRUE)
+NN_for <- forecast(NN_fit, h = length(ts_monthly_test), xreg = ts_monthly_test[,-1])
+
+
+NN_scores <- accuracy(NN_for$mean,ts_monthly_test[,1])
+print(NN_scores)
+
+# Plot
+#autoplot(ts_monthly_train[,1]) +
+#  autolayer(NN_for, series="Neural Network",PI=TRUE)+
+#  ylab("Active Power") 
+
+
+```
+
+# Predicting using monthly data, w log of methane
+```{r}
+
+NN_fit <- nnetar(log(ts_monthly_train[, "methane"]), xreg = ts_monthly_train[,-1],PI=TRUE)
+                 
+NN_for <- forecast(NN_fit, h = length(ts_monthly_test), xreg = ts_monthly_test[,-1])
+NN_for$mean <- exp(NN_for$mean)
+
+NN_scores <- accuracy(NN_for$mean,ts_monthly_test[,1])
+print(NN_scores)
+
+# Plot
+#autoplot(ts_monthly_train[,1]) +
+#  autolayer(NN_for, series="Neural Network",PI=TRUE)+
+#  ylab("Active Power") 
 
 ```
 
 
 
-# Data processing
+
+
+
+
+
+# Correlation
+
 ```{r}
+library(ggstatsplot)
+
+methane_training_yearly <- methane_training %>% 
+  filter(year < 2024) %>% 
+  group_by(year) %>% 
+  summarize(yearly_average = mean(average))
+
+methane_testing_yearly <- methane_test %>% 
+  group_by(year) %>% 
+  summarize(yearly_average = mean(average))
+
+social_data_yearly_df <- cbind(methane_training_yearly[2],social_data_yearly %>% select(-Time))
+
+
+corr_data <- cor(social_data_yearly_df)
+
+corr_data <- round(corr_data, digits = 2)
+
+corrplot(corr_data)
+
+ggcorrmat(
+  data = social_data_yearly_df[,]
+)
+
+
+```
+
+# Prediction: Using Neural Network
+
+```{r}
+library(forecast)
+
+ts_social_training <- ts(social_data_yearly_df, start = c(1983), frequency = 1)
+ts_social_testing <- ts(methane_testing_yearly, start = c(2022), frequency = 1)
+
+NN_fit <- nnetar(ts_social_training[,1],
+                 p=1,
+                 P=1,
+                 xreg=ts_social_training[,-1],PI=TRUE)
+
+NN_for <- forecast(NN_fit, h = 3, xreg = ts_social_training[,-1])
+
+NN_scores <- accuracy(NN_for$mean,ts_social_testing[,2])
+
+#Plot model + observed data
+autoplot(ts_social_training[,1]) +
+  autolayer(NN_for, series="Neural Network",PI=TRUE)+
+  ylab("Active Power")
+
+
+```
+
+
+
+
+
+
+-----------------------------------------------
+Deprecated codes
+-----------------------------------------------
+
+
+# Data processing - monthly data
+```{r, eval = FALSE}
 
 ## Import data
 social_data <- read.csv("../Data/Raw/social_economic_factors.csv")
@@ -27,7 +179,7 @@ social_data <- read.csv("../Data/Raw/social_economic_factors.csv")
 ## Interpolate yearly data to monthly data
 col_names <- colnames(social_data)[-1]
 interpolation_time<- seq(1983, 2023 + 11/12, by = 1/12)
-social_data_monthly <- data.frame(Time = monthly_time)
+social_data_monthly <- data.frame(Time = interpolation_time)
 
 for (var in col_names) {
   interpolated <- approx(
@@ -53,10 +205,22 @@ write.csv(social_data_monthly, file = "../Data/Processed/social_economic_factors
 
 ```
 
+# Data processing - yearly data
+
+```{r}
+
+## Import data
+social_data <- read.csv("../Data/Raw/social_economic_factors.csv")
 
 
+social_data_yearly <- social_data %>%
+ filter(Time<=2021)
+
+## Export data
+write.csv(social_data_yearly, file = "../Data/Processed/social_economic_factors_yearly.csv", row.names=FALSE)
 
 
+```
 
 # Import Data
 
@@ -64,6 +228,15 @@ write.csv(social_data_monthly, file = "../Data/Processed/social_economic_factors
 methane_all <- read.csv("../Data/Processed/methane_all.csv")
 methane_training <- read.csv("../Data/Processed/methane_training.csv")
 methane_test <- read.csv("../Data/Processed/methane_test.csv")
+
+#social_data <- read.csv("../Data/Processed/social_economic_factors.csv")
+#social_data <- social_data %>% filter(!(year == 1983 & month <= 6)) 
+
+
+social_data_yearly <- read.csv("../Data/Processed/social_economic_factors_yearly.csv")
+
+social_data_yearly$gdp <- log(social_data_yearly$gdp)
+
 
 ```
 
