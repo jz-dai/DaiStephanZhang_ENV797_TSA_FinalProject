@@ -49,10 +49,6 @@ temp_anomaly <- read.csv("./Data/Raw/temperature_anomaly.csv",
                          skip = 4, 
                          header = TRUE) %>%
   mutate(Date = ym(Date))
-
-write.csv(temp_anomaly, 
-          file = "./Data/Processed/Temp_Anomaly/temp_anomaly_all.csv",
-          row.names = FALSE)
 ```
 
 ```{r}
