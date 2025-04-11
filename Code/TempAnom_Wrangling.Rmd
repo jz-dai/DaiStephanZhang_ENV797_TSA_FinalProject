@@ -59,7 +59,22 @@ temp_anomaly_yearly <- temp_anomaly %>%
   group_by(year) %>%
   summarize(year_anomaly = mean(Anomaly))
 
-#subset by methane training years
+#subset by methane training years (1983-2021) and test years (2022-2024)
+temp_anomaly_train <- temp_anomaly %>%
+  mutate(year = year(Date)) %>%
+  filter(year >= 1983 & year <= 2021) %>%
+  select(-year)
+
+temp_anomaly_test <- temp_anomaly %>%
+  mutate(year = year(Date)) %>%
+  filter(year >= 2022 & year <= 2024)%>%
+  select(-year)
+
+temp_anomaly_yearly_train <- temp_anomaly_yearly %>%
+  filter(year >= 1983 & year <= 2021)
+
+temp_anomaly_yearly_test <- temp_anomaly_yearly %>%
+  filter(year >= 2022 & year <= 2024)
 ```
 
 ```{r}
@@ -73,5 +88,23 @@ write.csv(temp_anomaly,
 write.csv(temp_anomaly_yearly, 
           file = "./Data/Processed/Temp_Anomaly/temp_anomaly_year_all.csv",
           row.names = FALSE)
+
+#data subsets
+write.csv(temp_anomaly_yearly_test, 
+          file = "./Data/Processed/Temp_Anomaly/temp_anomaly_year_test.csv",
+          row.names = FALSE)
+
+write.csv(temp_anomaly_yearly_train, 
+          file = "./Data/Processed/Temp_Anomaly/temp_anomaly_year_train.csv",
+          row.names = FALSE)
+
+write.csv(temp_anomaly_test, 
+          file = "./Data/Processed/Temp_Anomaly/temp_anomaly_test.csv",
+          row.names = FALSE)
+
+write.csv(temp_anomaly_train, 
+          file = "./Data/Processed/Temp_Anomaly/temp_anomaly_train.csv",
+          row.names = FALSE)
+
 ```
 
