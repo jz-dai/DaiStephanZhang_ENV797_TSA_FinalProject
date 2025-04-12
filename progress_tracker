@@ -1,0 +1,79 @@
+PROGRESS TRACKER
+
+The goal of this assignment is to accurately predict methane concentrations and use that prediction to determine changes in climate (i.e., global temperature). The predictors for this assessment are beef production and social factors.
+
+Legend:
+x - completed
+R - assigned to Rachael
+r - currently in progress by Rachael
+ - assigned to Jingze
+ - currently in progress by Jingze
+ - assigned to John
+ - currently in progress by John
+
+Tasks:
+  *Background Information*
+  Due: April 15, 2025
+    [ ] General importance of methane concentrations (see first presentation)
+        [ ] Greenhouse gas & GH Effect (temperature)
+        [ ] Major contributors (beef production)
+        [ ] 
+    
+  *Forecast the methane data*
+  Due: April 15, 2025
+    [x] ACF/PACF & decomposition (detrended datasets)
+    [ ] Determine which models to use. Justify why (if any) models are not included
+    [ ] Model only the methane data
+        [x] ARIMA
+        [ ] ARIMA with Fourier
+        [x] SARIMA
+        [ ] SARIMA with Fourier
+        [ ] Neural Network
+        [ ] STL + ETS
+        [ ] TBATS
+        [ ] State Space
+  
+  Forecast the methane data with beef predictor:
+    [ ] ARIMA
+    [ ] ARIMA with Fourier
+    [ ] SARIMA
+    [ ] SARIMA with Fourier
+    [ ] Neural Network
+    [ ] STL + ETS
+    [ ] TBATS
+    [ ] State Space
+    
+  Forecast the methane data with social predictor:
+    [ ] ARIMA
+    [ ] ARIMA with Fourier
+    [ ] SARIMA
+    [ ] SARIMA with Fourier
+    [ ] Neural Network
+    [ ] STL + ETS
+    [ ] TBATS
+    [ ] State Space
+    
+  Forecast the methane data with both predictors:
+    [ ] ARIMA
+    [ ] ARIMA with Fourier
+    [ ] SARIMA
+    [ ] SARIMA with Fourier
+    [ ] Neural Network
+    [ ] STL + ETS
+    [ ] TBATS
+    [ ] State Space
+  
+  Forecast the temperature with methane and predictors (i.e., with most accurate model from above)
+    [ ] ARIMA
+    [ ] ARIMA with Fourier
+    [ ] SARIMA
+    [ ] SARIMA with Fourier
+    [ ] Neural Network
+    [ ] STL + ETS
+    [ ] TBATS
+    [ ] State Space
+    
+  Determine best model
+    [ ] Compare all previously calculated performance statistics
+
+*Tasks with an asterisk should be completed by Tuesday April 15, 2025 and should be included in the presentation given to the class.

@@ -77,9 +77,7 @@ write.csv(methane_training,
           file = "./Data/Processed/methane_training.csv",
           row.names=FALSE)
 ```
-
-
-
+ 
 ```{r ts_set}
 #create timeseries object of 
 methane_train_ts <-ts(methane_training$average, 
@@ -91,81 +89,5 @@ methane_train_ts <-ts(methane_training$average,
 autoplot(methane_train_ts)+
   labs(title = "Globally Averaged Atmospheric Methane Concentrations from 1983 to 2021",
        y = "Methane (ppb)")
-```
-
-```{r warning=FALSE}
-#check acf and pacf
-ACF_Plot <- autoplot(Acf(methane_train_ts, lag=40, plot = FALSE), 
-                     ylim=c(-0.5,1), 
-                     main="ACF plot")
-PACF_Plot <- autoplot(Pacf(methane_train_ts, lag=40, plot = FALSE), 
-                      ylim=c(-0.5,1), 
-                      main="PACF plot")
-plot_grid(ACF_Plot, PACF_Plot)
-```
-
-```{r}
-#decompose the training series
-decomposed <- decompose(methane_train_ts, type = "additive")
-plot(decomposed)
-```
-
-```{r}
-#detrend and deseason the series
-methane_trend <- decomposed$trend
-methane_seasonality <- decomposed$seasonal
-methane_detrend <- methane_train_ts - methane_trend
-methane_deseasoned <- methane_train_ts - methane_seasonality
-
-detrend_plot <- autoplot(methane_detrend, ylim=c(-30,30), 
-                         main="Detrended Plot") + ylab("Methane (ppb)")
-deseasoned_plot <- autoplot(methane_deseasoned,
-                            main="Deseasoned Plot") + ylab("Methane (ppb)")
-plot_grid(detrend_plot, deseasoned_plot)
-```
-
-```{r}
-#check ACF and PACF of detrended and deseasoned series
-ACF_detrend <- autoplot(Acf(methane_detrend, lag=40, plot = FALSE), 
-                     ylim=c(-0.5,1), 
-                     main="Detrended ACF plot")
-
-ACF_deseason <- autoplot(Acf(methane_deseasoned, lag=40, plot = FALSE), 
-                     ylim=c(-0.5,1), 
-                     main="Deseasoned ACF plot")
-
-PACF_detrend <- autoplot(Pacf(methane_detrend, lag=40, plot = FALSE), 
-                     ylim=c(-0.5,1), 
-                     main="Detrended PACF plot")
-
-PACF_deseason <- autoplot(Pacf(methane_deseasoned, lag=40, plot = FALSE), 
-                     ylim=c(-0.5,1), 
-                     main="Deseasoned PACF plot")
-
-plot_row1 <- plot_grid(ACF_Plot, ACF_detrend, ACF_deseason, nrow=1, ncol=3)
-plot_row2 <- plot_grid(PACF_Plot, PACF_detrend, PACF_deseason, nrow=1, ncol=3)
-plot_grid(plot_row1, plot_row2, nrow=2, ncol=1)
-```
-
-
-```{r}
-#Mann-Kendall test
-print("Results from Seasonal Mann-Kendall Test for orginal data")
-summary(SeasonalMannKendall(methane_train_ts))
-
-print("Results from Mann-Kendall Test for deseasoned data")
-summary(MannKendall(methane_deseasoned))
-```
-
-```{r}
-#ADF test
-print("Results from ADF test for original data")
-print(adf.test(methane_train_ts,alternative = "stationary"))
-```
-
-```{r}
-#Spearman Correlation
-print("Results from Spearman Correlation")
-print(cor.test(methane_train_ts,c(1:462),method="spearman"))
 ```
 
