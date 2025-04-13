@@ -8,8 +8,8 @@ R - assigned to Rachael
 r - currently in progress by Rachael
 J - assigned to Jingze
 j - currently in progress by Jingze
- - assigned to John
- - currently in progress by John
+Z - assigned to John
+z - currently in progress by John
 
 Tasks:
   *Background Information*
@@ -23,15 +23,16 @@ Tasks:
   Due: April 15, 2025
     [x] ACF/PACF & decomposition (detrended datasets)
     [ ] Determine which models to use. Justify why (if any) models are not included
+    [Z] Correlation of beef production and social economic factors to methane
     [ ] Model only the methane data
         [x] ARIMA
-        [ ] ARIMA with Fourier
+        [Z] ARIMA with Fourier
         [x] SARIMA
-        [ ] SARIMA with Fourier
-        [ ] Neural Network
+        [Z] SARIMA with Fourier
+        [Z] Neural Network
         [J] STL + ETS
         [J] TBATS
-        [ ] State Space
+        [Z] State Space
   
   Forecast the methane data with beef predictor:
     [ ] ARIMA
