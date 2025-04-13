@@ -26,7 +26,7 @@ Tasks:
     [Z] Correlation of beef production and social economic factors to methane
     [ ] Model only the methane data
         [x] ARIMA
-        [Z] ARIMA with Fourier
+        [R] ARIMA with Fourier
         [x] SARIMA
         [Z] SARIMA with Fourier
         [Z] Neural Network
