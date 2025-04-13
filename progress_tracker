@@ -6,8 +6,8 @@ Legend:
 x - completed
 R - assigned to Rachael
 r - currently in progress by Rachael
- - assigned to Jingze
- - currently in progress by Jingze
+J - assigned to Jingze
+j - currently in progress by Jingze
  - assigned to John
  - currently in progress by John
 
@@ -16,7 +16,7 @@ Tasks:
   Due: April 15, 2025
     [ ] General importance of methane concentrations (see first presentation)
         [ ] Greenhouse gas & GH Effect (temperature)
-        [ ] Major contributors (beef production)
+        [J] Major contributors (beef production)
         [ ] 
     
   *Forecast the methane data*
@@ -29,8 +29,8 @@ Tasks:
         [x] SARIMA
         [ ] SARIMA with Fourier
         [ ] Neural Network
-        [ ] STL + ETS
-        [ ] TBATS
+        [J] STL + ETS
+        [J] TBATS
         [ ] State Space
   
   Forecast the methane data with beef predictor:
