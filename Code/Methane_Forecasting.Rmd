@@ -61,6 +61,15 @@ methane_test_ts <-ts(methane_test$average,
                 start = c(2022,1), 
                 end = c(2024, 12), 
                 frequency = 12)
+
+#create msts
+methane_train_msts <- msts(methane_train$average, 
+                            seasonal.periods =c(4,12),
+                            start=c(1983,7)) 
+
+methane_test_msts <- msts(methane_test$average, 
+                            seasonal.periods =c(4,12),
+                            start=c(2022,1))
 ```
 
 ## Deseason Data
@@ -197,21 +206,51 @@ The SARIMA auto-fit was: ARIMA(2,1,2)(1,1,1)[12].
 
 The residuals look pretty good. There is one notable outlier. Otherwise, the residuals are primarily not significant in the ACF plot and are normally distributed.
 
+## ARIMA with Fourier
+
+```{r echo=FALSE}
+#autofit the arima model
+arima_fourier_autofit <- auto.arima(methane_train_msts,
+                                    seasonal=FALSE,
+                                    lambda=0,
+                                    xreg=fourier(methane_train_msts,
+                                                 K=c(2,6)))
+print(arima_fourier_autofit)
+
+#get residuals
+checkresiduals(arima_fourier_autofit)
+
+#create the arima forecast with the autofit
+forecast_arima_fourier <- forecast(object = arima_fourier_autofit,
+                                   xreg=fourier(methane_train_msts,
+                                                K=c(2,6),
+                                                h=36),
+                                   h=365)
+  
+#calculate accuracy metrics
+forecast_arima_fourier_accuracy <- accuracy(forecast_arima_fourier$mean, methane_test_msts)
+
+#plot the forecast
+plot(forecast_arima_fourier)
+```
+
 # Performance Comparison
 
 ```{r echo=FALSE}
 # Combine performance vectors as rows
 forecast_performance <- data.frame(rbind(forecast_arima_accuracy, 
-                                         forecast_sarima_accuracy))
+                                         forecast_sarima_accuracy,
+                                         forecast_arima_fourier_accuracy))
 
 # Set row names
 rownames(forecast_performance) <- c("ARIMA",
-                                    "SARIMA")
+                                    "SARIMA",
+                                    "ARIMA with Fourier")
 ```
 
 ```{r echo=FALSE}
 kable(forecast_performance,
-      format = "latex",  # Works for PDF output
+      #format = "latex",  # Works for PDF output
       caption = "Forecast Accuracy",
       digits = 3,
       booktabs = TRUE)

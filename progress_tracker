@@ -15,7 +15,7 @@ Tasks:
   *Background Information*
   Due: April 15, 2025
     [ ] General importance of methane concentrations (see first presentation)
-        [ ] Greenhouse gas & GH Effect (temperature)
+        [R] Greenhouse gas & GH Effect (temperature)
         [J] Major contributors (beef production)
         [ ] 
     
@@ -26,9 +26,8 @@ Tasks:
     [Z] Correlation of beef production and social economic factors to methane
     [ ] Model only the methane data
         [x] ARIMA
-        [R] ARIMA with Fourier
+        [x] ARIMA with Fourier
         [x] SARIMA
-        [Z] SARIMA with Fourier
         [Z] Neural Network
         [J] STL + ETS
         [J] TBATS
