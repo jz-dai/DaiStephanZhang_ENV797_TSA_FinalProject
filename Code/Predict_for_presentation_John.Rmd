@@ -22,27 +22,11 @@ library(cowplot)
 library(Kendall)
 library(tseries)
 library(kableExtra)
-
+library(dplyr)
 library(smooth)
 
 set.seed(797)
-```
 
-```{r theme, include=FALSE}
-#create plot theme
-mytheme <- theme_bw(base_size = 10)+
-  theme(axis.title = element_text(size = 10, hjust = 0.5),
-        plot.title.position = "panel",
-        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.25),
-        plot.caption = element_text(hjust = 0),
-        legend.box = "vertical",
-        legend.location = "plot",
-        axis.gridlines = element_line(color = "grey", linewidth = 0.25),
-        axis.ticks = element_line(color = "black", linewidth = 0.5),
-        axis.grid = element_blank())
-
-#set plot theme
-theme_set(mytheme)
 ```
 
 
@@ -52,6 +36,7 @@ theme_set(mytheme)
 #upload test and training data
 methane_train <- read.csv("../Data/Processed/methane_training.csv")
 methane_test <- read.csv("../Data/Processed/methane_test.csv")
+methane_all <- read.csv("../Data/Processed/methane_all.csv")
 
 #create ts object
 methane_train_ts <-ts(methane_train$average, 
@@ -74,7 +59,100 @@ methane_test_msts <- msts(methane_test$average,
                             start=c(2022,1))
 ```
 
-# Neuron Network
+
+# Relationship between external variables
+```{r}
+
+social_economic <- read.csv("../Data/Processed/social_economic_factors_monthly.csv")
+beef_production <- read.csv("../Data/Processed/beef_production.csv") 
+
+```
+
+## Drawing for beef production
+
+```{r warning = FALSE}
+
+methane_yearly <- read.csv("../Data/Processed/social_economic_factors_yearly.csv") 
+
+methane_yearly <- methane_all %>% 
+  filter(year <= 2021) %>% 
+  group_by(year) %>% 
+  summarize(yearly_average = mean(average))
+
+methane_yearly <- cbind(methane_yearly, beef_production %>% filter(Year <= 2021))
+
+p <- ggplot(methane_yearly, mapping = aes(x = log(Beef_Production.Tons.), y = yearly_average)) + geom_point() + geom_smooth(method="lm") 
+
+p + geom_point()+
+  theme(panel.grid = element_blank(),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12)
+        )+
+  ylab("Yearly Methane Emission")+
+  xlab("log(Beef Production)")
+
+
+```
+
+## Drawing for social economic factors
+
+```{r warning = FALSE}
+social_economic_panel <- read.csv("../Data/Processed/social_economic_factors_monthly_paneldata.csv")
+
+social_economic_panel$social.factors <- factor(
+  social_economic_panel$social.factors,
+  levels = c("cpi", "export", "import", "ip"),
+  labels = c("Consumer Price Index", "Merchandise Exports", "Merchandise Imports", "Industrial Production")
+)
+
+
+p2 <- ggplot(social_economic_panel, mapping = aes(x = value, y = methane)) 
+
+p2 + geom_point() + facet_wrap(~ social.factors, nrow = 2) + geom_smooth(method="lm") +
+  theme(panel.grid = element_blank(),
+        strip.text = element_text(size = 12),
+        axis.title.x = element_text(size = 12),
+        axis.title.y = element_text(size = 12),
+        axis.text.x = element_text(size = 12),
+        axis.text.y = element_text(size = 12)
+        )+
+  ylab("Monthly Methane Emission")+
+  xlab("Social Economic Factors")
+
+
+
+
+```
+
+```{r warning = FALSE}
+library(corrplot)
+
+
+social_data_monthly <- read.csv("../Data/Processed/social_economic_factors_monthly.csv")
+
+corr_data <- cor(social_data_monthly)
+
+colnames(corr_data) <- c("Methane Production","Consumer Price Index", "Merchandise Exports", "Merchandise Imports", "Industrial Production")
+rownames(corr_data) <- c("Methane Production","Consumer Price Index", "Merchandise Exports", "Merchandise Imports", "Industrial Production")
+  
+corrplot(corr_data,
+         tl.col = "black",
+         method = "color",
+         addCoef.col = "white",
+         type = "upper",
+         tl.srt = 30)
+
+
+
+```
+
+
+
+# Predictions
+
+## Neuron Network
 
 ```{r}
 
@@ -104,9 +182,75 @@ print(forecast_NN_fourier_accuracy)
 plot(NN_fourier_for)
 
 ```
-## Find the optimal parameter for NN
+
+## State Space - Smooth
 
 ```{r}
+
+SSES <- es(methane_train_ts,model="ZZZ",h=36,holdout=FALSE)
+
+SSES_for <-forecast(SSES,h=36, interval="prediction")
+
+plot(SSES_for)
+
+forecast_SSES_accuracy <- accuracy(SSES$forecast, methane_test_ts)
+
+print(forecast_SSES_accuracy)
+
+```
+
+## State Space - BSM
+
+```{r}
+
+SSBSM <- StructTS(methane_train_ts,
+                    type="BSM",fixed=c(NA,NA,NA,NA))
+
+SSBSM_for <- forecast(SSBSM,h=36)
+
+plot(SSBSM_for)
+
+forecast_SSBSM_accuracy <- accuracy(SSBSM_for$mean,methane_test_ts)
+
+print(forecast_SSBSM_accuracy)
+
+```
+
+# Performance Comparison
+
+```{r echo=FALSE}
+# Combine performance vectors as rows
+forecast_performance <- data.frame(rbind(forecast_NN_accuracy, 
+                                         forecast_NN_fourier_accuracy,
+                                         forecast_SSES_accuracy,
+                                         forecast_SSBSM_accuracy))
+
+# Set row names
+rownames(forecast_performance) <- c("Neural Network",
+                                    "Neural Network w/fourier",
+                                    "State Space w/Exponential smoothing",
+                                    "State Space w/BSM")
+```
+
+```{r}
+kable(forecast_performance,
+      #format = "latex",  # Works for PDF output
+      caption = "Forecast Accuracy",
+      digits = 3,
+      booktabs = TRUE)
+
+```
+
+
+
+
+# A tool to find the optimal parameter
+
+## Find the optimal parameter for NN
+
+```{r eval = FALSE}
+# i and j in the loop are the parameter for p and P. Basically it could output the model performance iteratively, then you could choose the parameter with the best performance. 
+
 for (i in 0:3){
     for (j in 0:8){
       
@@ -133,7 +277,7 @@ for (i in 0:3){
 
 ## Find the optimal parameter for NN w/fourier
 
-```{r}
+```{r eval = FALSE}
 
 for (i in 0:2){
     for (j in 0:8){
@@ -160,17 +304,5 @@ for (i in 0:2){
 
 ```
 
-# State Space
-
-```{r}
-
-SSES <- es(methane_train_ts,model="ZZZ",h=36,holdout=FALSE)
-
-forecast_SSES_accuracy <- accuracy(SSES$forecast, methane_test_ts)
-
-print(forecast_SSES_accuracy)
-
-
-```
 
 
