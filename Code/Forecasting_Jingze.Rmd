@@ -11,8 +11,9 @@ Importing library
 ```{r}
 library(forecast)
 library(ggplot2)
-library(tibble)
-library(gridExtra)
+library(kableExtra)
+
+set.seed(797)
 ```
 
 
@@ -36,14 +37,51 @@ methane_train_msts <- msts(methane_train$average, seasonal.periods = c(4, 12), s
 STL+ETS forecast
 
 ```{r}
-stl_decomp <- stl(methane_train_ts, s.window = "periodic")
-stl_ets_model <- forecast(stl_decomp, h = length(methane_test_ts))
+#fit STL with ETS
+stl_ets_fit <- stlm(methane_train_ts, s.window = "periodic", method = "ets")
+print(stl_ets_fit$model)
+
+#forecasting test data
+stl_ets_forecast <- forecast(stl_ets_fit, h = length(methane_test_ts))
+
+#accuracy assessment
+stl_ets_accuracy <- accuracy(stl_ets_forecast$mean, methane_test_ts)
+
+#visualization
+plot(stl_ets_forecast)
 ```
 
 TBATS forecast
 
 ```{r}
-tbats_model <- tbats(methane_train_msts)
-tbats_forecast <- forecast(tbats_model, h = length(methane_test_ts))
+#fit TBATS
+tbats_fit <- tbats(methane_train_msts)
+print(tbats_fit)
+checkresiduals(tbats_fit)
+
+#forecasting test data
+tbats_forecast <- forecast(tbats_fit, h = length(methane_test_ts))
+
+#accuracy assessment
+tbats_accuracy <- accuracy(tbats_forecast$mean, methane_test_ts)
+
+#visualization
+plot(tbats_forecast)
+```
+
+
+Performance comparison
+
+```{r}
+forecast_performance_Jingze <- data.frame(rbind(stl_ets_accuracy,
+                                                tbats_accuracy))
+
+rownames(forecast_performance_Jingze) <- c("STL + ETS", "TBATS")
+
+#comparison table
+kable(forecast_performance_Jingze,
+      caption = "Forecast Accuracy Comparison",
+      digits = 3,
+      booktabs = TRUE)
 ```
 
