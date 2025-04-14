@@ -28,10 +28,10 @@ Tasks:
         [x] ARIMA
         [x] ARIMA with Fourier
         [x] SARIMA
-        [Z] Neural Network
+        [x] Neural Network
         [J] STL + ETS
         [J] TBATS
-        [Z] State Space
+        [x] State Space
   
   Forecast the methane data with beef predictor:
     [ ] ARIMA
