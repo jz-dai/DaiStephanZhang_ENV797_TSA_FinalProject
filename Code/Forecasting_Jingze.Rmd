@@ -1,0 +1,49 @@
+---
+title: "Forecasting_Jingze"
+output: 
+  pdf_document: default
+editor_options: 
+  chunk_output_type: console
+---
+
+Importing library
+
+```{r}
+library(forecast)
+library(ggplot2)
+library(tibble)
+library(gridExtra)
+```
+
+
+Loading dataset 
+
+```{r}
+methane_train <- read.csv("./Data/Processed/methane_training.csv")
+methane_test <- read.csv("./Data/Processed/methane_test.csv")
+```
+
+Creating time series
+
+```{r}
+methane_train_ts <- ts(methane_train$average, start = c(1983, 7), frequency = 12)
+methane_test_ts  <- ts(methane_test$average,  start = c(2022, 1), frequency = 12)
+
+#multi-seasonal 
+methane_train_msts <- msts(methane_train$average, seasonal.periods = c(4, 12), start = c(1983, 7))
+```
+
+STL+ETS forecast
+
+```{r}
+stl_decomp <- stl(methane_train_ts, s.window = "periodic")
+stl_ets_model <- forecast(stl_decomp, h = length(methane_test_ts))
+```
+
+TBATS forecast
+
+```{r}
+tbats_model <- tbats(methane_train_msts)
+tbats_forecast <- forecast(tbats_model, h = length(methane_test_ts))
+```
+
