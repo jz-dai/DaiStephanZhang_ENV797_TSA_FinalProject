@@ -23,7 +23,7 @@ Tasks:
   Due: April 15, 2025
     [x] ACF/PACF & decomposition (detrended datasets)
     [ ] Determine which models to use. Justify why (if any) models are not included
-    [Z] Correlation of beef production and social economic factors to methane
+    [x] Correlation of beef production and social economic factors to methane
     [ ] Model only the methane data
         [x] ARIMA
         [x] ARIMA with Fourier
