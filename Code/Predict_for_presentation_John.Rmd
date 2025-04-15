@@ -3,6 +3,8 @@ title: "Prediction for presentation"
 author: "Zhang"
 date: "2025-04-14"
 output: pdf_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r chunks, include=FALSE}
@@ -93,6 +95,10 @@ p + geom_point()+
   ylab("Yearly Methane Emission")+
   xlab("log(Beef Production)")
 
+ggsave("../Figures/Presentation/beef_relationship.svg",
+       width = 5,
+       height = 5,
+       dpi = 100)
 
 ```
 
@@ -110,7 +116,7 @@ social_economic_panel$social.factors <- factor(
 
 p2 <- ggplot(social_economic_panel, mapping = aes(x = value, y = methane)) 
 
-p2 + geom_point() + facet_wrap(~ social.factors, nrow = 2) + geom_smooth(method="lm") +
+p2 + geom_point(size = 0.3) + facet_wrap(~ social.factors, nrow = 2) + geom_smooth(method="lm") +
   theme(panel.grid = element_blank(),
         strip.text = element_text(size = 12),
         axis.title.x = element_text(size = 12),
@@ -121,7 +127,10 @@ p2 + geom_point() + facet_wrap(~ social.factors, nrow = 2) + geom_smooth(method=
   ylab("Monthly Methane Emission")+
   xlab("Social Economic Factors")
 
-
+ggsave("../Figures/Presentation/social_relationship.svg",
+       width = 5,
+       height = 5,
+       dpi = 100)
 
 
 ```
@@ -136,7 +145,10 @@ corr_data <- cor(social_data_monthly)
 
 colnames(corr_data) <- c("Methane Production","Consumer Price Index", "Merchandise Exports", "Merchandise Imports", "Industrial Production")
 rownames(corr_data) <- c("Methane Production","Consumer Price Index", "Merchandise Exports", "Merchandise Imports", "Industrial Production")
-  
+
+
+svg("../Figures/Presentation/correlation matrix.svg", width = 8, height = 8)
+
 corrplot(corr_data,
          tl.col = "black",
          method = "color",
@@ -144,7 +156,7 @@ corrplot(corr_data,
          type = "upper",
          tl.srt = 30)
 
-
+dev.off()
 
 ```
 
@@ -240,6 +252,38 @@ kable(forecast_performance,
       booktabs = TRUE)
 
 ```
+
+```{r}
+
+temperature <- read.csv("../Data/Raw/temperature_anomaly.csv", skip = 4)
+temperature$Year <- as.integer(substr(temperature$Date, 1, 4))
+temperature$Month <- as.integer(substr(temperature$Date, 5, 6))
+
+temperature <- temperature %>%
+  filter(
+    (Year > 1983 | (Year == 1983 & Month >= 7)) &
+    (Year < 2025 | (Year == 2024 & Month < 11))
+  ) %>% filter(Year == 2024 & Month == 12)
+
+combined <- cbind(temperature, methane_all)
+
+combined$yearmonth <- as.Date(paste0(combined$Year, "-", combined$Month, "-01"))
+
+
+```
+
+```{r}
+
+p <- ggplot(combined, mapping = aes(x = yearmonth)) +
+  geom_line(aes(y = Anomaly), color = "blue") +
+  geom_line(aes(y = average), color = "red")
+
+p
+
+```
+
+
+
 
 
 
