@@ -114,3 +114,111 @@ autoplot(forecast_arimax) +
 accuracy(forecast_arimax$mean, methane_test)
 ```
 
+```{r}
+social_economic <- read.csv("../Data/Processed/social_economic_factors_monthly.csv")
+social_train <- social_economic[1:473,]
+social_test <- social_economic[474:497,]
+
+methane_social_train <- ts(social_train$methane, frequency=12)
+cpi_train <- ts(social_train$cpi, frequency=12)
+export_train <- ts(social_train$export, frequency=12)
+import_train <- ts(social_train$import, frequency=12)
+ip_train <- ts(social_train$ip, frequency=12)
+
+methane_social_test <- ts(social_test$methane, frequency=12)
+cpi_test <- ts(social_test$cpi, frequency=12)
+export_test <- ts(social_test$export, frequency=12)
+import_test <- ts(social_test$import, frequency=12)
+ip_test <- ts(social_test$ip, frequency=12)
+
+```
+
+```{r}
+arimax_fit_cpi <- auto.arima(methane_social_train, xreg = cpi_train)
+summary(arimax_fit_cpi)
+checkresiduals(arimax_fit_cpi)
+```
+
+```{r}
+forecast_arimax_cpi <- forecast(arimax_fit_cpi, xreg = cpi_test, h = length(methane_social_test))
+```
+
+```{r}
+arimax_fit_export <- auto.arima(methane_social_train, xreg = export_train)
+summary(arimax_fit_export)
+checkresiduals(arimax_fit_export)
+forecast_arimax_export <- forecast(arimax_fit_export, xreg = export_test, h = length(methane_social_test))
+
+```
+```{r}
+arimax_fit_import <- auto.arima(methane_social_train, xreg = import_train)
+summary(arimax_fit_import)
+checkresiduals(arimax_fit_import)
+forecast_arimax_import <- forecast(arimax_fit_import, xreg = import_test, h = length(methane_social_test))
+```
+
+```{r}
+arimax_fit_ip <- auto.arima(methane_social_train, xreg = ip_train)
+summary(arimax_fit_ip)
+checkresiduals(arimax_fit_ip)
+forecast_arimax_ip <- forecast(arimax_fit_ip, xreg = ip_test, h = length(methane_social_test))
+```
+
+
+```{r}
+# Reset test and forecasts to start from time = 1
+n_test <- length(social_test$methane)
+
+# Actual test data
+methane_social_test <- ts(social_test$methane, start = 1, frequency = 12)
+
+# Forecasts aligned with test
+forecast_cpi_ts <- ts(forecast_arimax_cpi$mean, start = 1, frequency = 12)
+forecast_export_ts <- ts(forecast_arimax_export$mean, start = 1, frequency = 12)
+forecast_import_ts <- ts(forecast_arimax_import$mean, start = 1, frequency = 12)
+forecast_ip_ts <- ts(forecast_arimax_ip$mean, start = 1, frequency = 12)
+
+autoplot(methane_social_test) +
+  autolayer(forecast_ip_ts,
+            series = "IP",
+            PI = FALSE) +
+
+  autolayer(window(methane_social_test),
+            series = "True Data") +
+  labs(title = "Methane Forecasts",
+       y = "Methane Concentration (ppb)",
+       x = "Time",
+       col = "Models")
+
+```
+
+
+```{r}
+library(forecast)
+library(knitr)
+
+# Accuracy for each model
+acc_cpi <- accuracy(forecast_cpi_ts, methane_social_test)
+acc_export <- accuracy(forecast_export_ts, methane_social_test)
+acc_import <- accuracy(forecast_import_ts, methane_social_test)
+acc_ip <- accuracy(forecast_ip_ts, methane_social_test)
+
+# Combine into a single data frame
+acc_all <- rbind(
+  "ARIMAX CPI" = acc_cpi,
+  "ARIMAX Export" = acc_export,
+  "ARIMAX Import" = acc_import,
+  "ARIMAX IP" = acc_ip
+)
+
+rownames(acc_all) <- c(
+  "CPI ARIMAX",
+  "Export ARIMAX",
+  "Import ARIMAX",
+  "IP ARIMAX"
+)
+# Display using kable
+kable(acc_all, digits = 2, caption = "Accuracy of ARIMAX Forecasts on Test Set")
+
+```
+
