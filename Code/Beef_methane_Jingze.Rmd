@@ -34,14 +34,14 @@ theme_set(mytheme)
 
 ```{r}
 #import data
-beef_production <- read.csv("./Data/Raw/beef_buffalo_production.csv", skip = 23,
+beef_production <- read.csv("../Data/Raw/beef_buffalo_production.csv", skip = 23,
                             header = FALSE)
 
 #set column names
 colnames(beef_production) <- c("Entity", "Code", "Year", "Beef_Production(Tons)")
 
 write.csv(beef_production, 
-          file = "./Data/Processed/beef_production.csv",
+          file = "../Data/Processed/beef_production.csv",
           row.names=FALSE)
 ```
 
@@ -60,7 +60,7 @@ autoplot(beef_ts)+
 ```
 
 ```{r}
-methane <- read.csv("./Data/Processed/methane_all.csv")
+methane <- read.csv("../Data/Processed/methane_all.csv")
 methane_yearly <- methane %>% 
   filter(year < 2024) %>% 
   group_by(year) %>% 
@@ -79,5 +79,38 @@ cor(methane_beef$`Beef_Production(Tons)`, methane_beef$yearly_average)
 
 ggplot(methane_beef, aes(`Beef_Production(Tons)`, yearly_average)) + 
   geom_point()
+```
+```{r}
+methane_beef_train <- subset(methane_beef, year <= 2021)
+methane_beef_test <- subset(methane_beef, year > 2021)
+
+beef_train <- ts(methane_beef_train$`Beef_Production(Tons)`, start = 1983)
+methane_train <- ts(methane_beef_train$yearly_average, start = 1983)
+
+beef_test <- ts(methane_beef_test$`Beef_Production(Tons)`, start = 2022)
+methane_test <- ts(methane_beef_test$yearly_average, start = 2022)
+```
+
+
+```{r}
+arimax_fit <- auto.arima(methane_train, xreg = beef_train)
+summary(arimax_fit)
+checkresiduals(arimax_fit)
+```
+
+```{r}
+forecast_arimax <- forecast(arimax_fit, xreg = beef_test, h = length(methane_test))
+
+autoplot(forecast_arimax) +
+  autolayer(methane_test, series = "Actual", PI = FALSE) +
+  labs(title = "ARIMAX Forecast: Methane Emissions using Beef Production",
+       y = "Methane Emissions",
+       x = "Year") +
+  guides(colour = guide_legend(title = "Legend"))
+
+```
+
+```{r}
+accuracy(forecast_arimax$mean, methane_test)
 ```
 
