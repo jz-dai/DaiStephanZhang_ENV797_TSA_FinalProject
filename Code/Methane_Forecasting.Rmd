@@ -1,9 +1,11 @@
 ---
 title: "Methane Forecasting"
-output: 
+output:
+  html_document:
+    df_print: paged
   pdf_document: default
-editor_options: 
-  chunk_output_type: console
+editor_options:
+  chunk_output_type: inline
 ---
 
 ```{r chunks, include=FALSE}
@@ -23,6 +25,8 @@ library(cowplot)
 library(Kendall)
 library(tseries)
 library(kableExtra)
+library(dplyr)
+library(smooth)
 
 set.seed(797)
 ```
@@ -50,6 +54,7 @@ theme_set(mytheme)
 #upload test and training data
 methane_train <- read.csv("./Data/Processed/methane_training.csv")
 methane_test <- read.csv("./Data/Processed/methane_test.csv")
+methane_all <- read.csv("./Data/Processed/methane_all.csv")
 
 #create ts object
 methane_train_ts <-ts(methane_train$average, 
@@ -59,7 +64,12 @@ methane_train_ts <-ts(methane_train$average,
 
 methane_test_ts <-ts(methane_test$average, 
                 start = c(2022,1), 
-                end = c(2024, 12), 
+                end = c(2024, 11), 
+                frequency = 12)
+
+methane_all_ts <-ts(methane_all$average, 
+                start = c(1983,7), 
+                end = c(2024, 11), 
                 frequency = 12)
 
 #create msts
@@ -169,7 +179,25 @@ print(arima_autofit)
 checkresiduals(arima_autofit)
 
 #create the sarima forecast with the autofit
-forecast_arima <- forecast(object = arima_autofit, h = 36)
+forecast_arima <- forecast(object = arima_autofit, h = 36) 
+
+# Recreate repeating seasonal pattern (fixed for classical decomposition)
+seasonal_pattern <- head(methane_seasonality, 12)
+
+# Repeat it to match 36 months
+seasonality_future <- ts(rep(seasonal_pattern, 3),
+                         start = c(2022, 1),
+                         frequency = 12)
+
+arima_forecast_seasoned <- ts(forecast_arima$mean + decomposed$seasonal[length(methane_train_ts) + 1:36],
+  start = c(2022, 1),
+  frequency = 12
+)
+
+# Add seasonality back into forecast
+forecast_arima$mean <- forecast_arima$mean + seasonality_future
+forecast_arima$lower <- forecast_arima$lower + seasonality_future
+forecast_arima$upper <- forecast_arima$upper + seasonality_future
 
 #calculate accuracy metrics
 forecast_arima_accuracy <- accuracy(forecast_arima$mean, methane_test_ts)
@@ -234,24 +262,155 @@ forecast_arima_fourier_accuracy <- accuracy(forecast_arima_fourier$mean, methane
 plot(forecast_arima_fourier)
 ```
 
+##STL+ETS
+
+```{r}
+#fit STL with ETS
+stl_ets_fit <- stlm(methane_train_ts, s.window = "periodic", method = "ets")
+print(stl_ets_fit$model)
+
+#forecasting test data
+stl_ets_forecast <- forecast(stl_ets_fit, h = length(methane_test_ts))
+
+#accuracy assessment
+stl_ets_accuracy <- accuracy(stl_ets_forecast$mean, methane_test_ts)
+
+#visualization
+plot(stl_ets_forecast)
+```
+
+##TBATS
+
+```{r}
+#fit TBATS
+tbats_fit <- tbats(methane_train_msts)
+print(tbats_fit)
+checkresiduals(tbats_fit)
+
+#forecasting test data
+tbats_forecast <- forecast(tbats_fit, h = length(methane_test_ts))
+
+#accuracy assessment
+tbats_accuracy <- accuracy(tbats_forecast$mean, methane_test_ts)
+
+#visualization
+plot(tbats_forecast)
+```
+
+## Neuron Network
+
+```{r}
+
+NN_fit <- nnetar(methane_train_ts, p = 1, P = 7)
+
+NN_for <- forecast(NN_fit, h=36)
+
+forecast_NN_accuracy <- accuracy(NN_for$mean, methane_test_ts)
+
+print(forecast_NN_accuracy)
+
+plot(NN_for)
+
+```
+
+```{r}
+
+NN_fourier_fit <- nnetar(methane_train_msts, p = 0, P = 7,
+                 xreg=fourier(methane_train_msts,K=c(2,6)))
+
+NN_fourier_for <- forecast(NN_fourier_fit, h=36, xreg=fourier(methane_train_msts,K=c(2,6), h=36))
+
+forecast_NN_fourier_accuracy <- accuracy(NN_fourier_for$mean, methane_test_msts)
+
+print(forecast_NN_fourier_accuracy)
+
+plot(NN_fourier_for)
+
+```
+
+## State Space - Smooth
+
+```{r}
+
+SSES <- es(methane_train_ts,model="ZZZ",h=36,holdout=FALSE)
+
+SSES_for <-forecast(SSES,h=36, interval="prediction")
+
+plot(SSES_for)
+
+forecast_SSES_accuracy <- accuracy(SSES$forecast, methane_test_ts)
+
+print(forecast_SSES_accuracy)
+
+```
+
+## State Space - BSM
+
+```{r}
+
+SSBSM <- StructTS(methane_train_ts,
+                    type="BSM",fixed=c(NA,NA,NA,NA))
+
+SSBSM_for <- forecast(SSBSM,h=36)
+
+plot(SSBSM_for)
+
+forecast_SSBSM_accuracy <- accuracy(SSBSM_for$mean,methane_test_ts)
+
+print(forecast_SSBSM_accuracy)
+
+```
+
 # Performance Comparison
 
 ```{r echo=FALSE}
 # Combine performance vectors as rows
 forecast_performance <- data.frame(rbind(forecast_arima_accuracy, 
                                          forecast_sarima_accuracy,
-                                         forecast_arima_fourier_accuracy))
+                                         forecast_arima_fourier_accuracy,
+                                         stl_ets_accuracy,
+                                         tbats_accuracy,
+                                         forecast_NN_accuracy, 
+                                         forecast_NN_fourier_accuracy,
+                                         forecast_SSES_accuracy,
+                                         forecast_SSBSM_accuracy))
 
 # Set row names
 rownames(forecast_performance) <- c("ARIMA",
                                     "SARIMA",
-                                    "ARIMA with Fourier")
+                                    "ARIMA w/ Fourier",
+                                    "STL + ETS",
+                                    "TBATS",
+                                    "Neural Network",
+                                    "Neural Network w/ fourier",
+                                    "State Space w/ Exponential smoothing",
+                                    "State Space w/ BSM")
 ```
 
 ```{r echo=FALSE}
-kable(forecast_performance,
-      #format = "latex",  # Works for PDF output
+kable(forecast_performance[,1:6], 
       caption = "Forecast Accuracy",
-      digits = 3,
-      booktabs = TRUE)
+      digits = 3)
 ```
+
+# All Forecasts Plot
+
+```{r}
+autoplot(methane_all_ts) +
+  autolayer(stl_ets_forecast, PI=FALSE, series="STL+ETS", alpha = 0.75) +
+  autolayer(forecast_arima, PI=FALSE, series="ARIMA", alpha = 0.75) +
+  autolayer(forecast_sarima, PI=FALSE, series="SARIMA", alpha = 0.75) +
+  autolayer(forecast_arima_fourier, PI=FALSE, series="ARIMA + Fourier", alpha = 0.75) +
+  autolayer(tbats_forecast,PI=FALSE, series="TBATS", alpha = 0.75) +
+  autolayer(NN_for,PI=FALSE, series="Neural Network", alpha = 0.75) +
+  autolayer(NN_fourier_for,PI=FALSE, series="Neural Network w/ Fourier", alpha = 0.75) +
+  autolayer(SSES_for,PI=FALSE, series="State Space w/ Exponential smoothing", alpha = 0.75) +
+  autolayer(SSBSM_for,PI=FALSE, series="State Space w/ BSM", alpha = 0.75)+
+  labs(x="Time",
+       y="Methane Concentration (ppb)",
+       title = "Methane Forecasts") +
+  guides(colour=guide_legend(title="Forecast"))+
+  xlim(c(2021 + 5/12, 2024 + 10/12))+
+  ylim(c(1875,1960))
+```
+

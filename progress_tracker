@@ -22,15 +22,15 @@ Tasks:
   *Forecast the methane data*
   Due: April 15, 2025
     [x] ACF/PACF & decomposition (detrended datasets)
-    [ ] Determine which models to use. Justify why (if any) models are not included
+    [x] Determine which models to use. Justify why (if any) models are not included
     [x] Correlation of beef production and social economic factors to methane
-    [ ] Model only the methane data
+    [x] Model only the methane data
         [x] ARIMA
         [x] ARIMA with Fourier
         [x] SARIMA
         [x] Neural Network
-        [J] STL + ETS
-        [J] TBATS
+        [x] STL + ETS
+        [x] TBATS
         [x] State Space
   
   Forecast the methane data with beef predictor:
