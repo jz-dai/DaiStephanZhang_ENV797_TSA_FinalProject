@@ -21,6 +21,7 @@ library(Kendall)
 library(tseries)
 library(lubridate)
 library(kableExtra)
+library(smooth)
 
 set.seed(797)
 ```
@@ -46,8 +47,8 @@ theme_set(mytheme)
 
 ```{r include=FALSE}
 #upload test and training data
-methane_train <- read.csv("./Data/Processed/methane_training.csv")
-methane_test <- read.csv("./Data/Processed/methane_test.csv")
+methane_train <- read.csv("../Data/Processed/methane_training.csv")
+methane_test <- read.csv("../Data/Processed/methane_test.csv")
 
 #create ts object
 methane_train_ts <-ts(methane_train$average, 
@@ -202,10 +203,69 @@ tbats_accuracy <- accuracy(tbats_forecast$mean, methane_test_ts)
 plot(tbats_forecast)
 ```
 
+## Neuron Network
+
+```{r}
+
+NN_fit <- nnetar(methane_train_ts, p = 1, P = 7)
+
+NN_for <- forecast(NN_fit, h=36)
+
+forecast_NN_accuracy <- accuracy(NN_for$mean, methane_test_ts)
+
+print(forecast_NN_accuracy)
+
+plot(NN_for)
+
+```
+
+```{r}
+NN_fourier_fit <- nnetar(methane_train_msts, p = 0, P = 7,
+                 xreg=fourier(methane_train_msts,K=c(2,6)))
+
+NN_fourier_for <- forecast(NN_fourier_fit, h=36, xreg=fourier(methane_train_msts,K=c(2,6), h=36))
+
+forecast_NN_fourier_accuracy <- accuracy(NN_fourier_for$mean, methane_test_msts)
+
+print(forecast_NN_fourier_accuracy)
+
+plot(NN_fourier_for)
+
+```
+
+## State Space - Smooth
+
+```{r}
+SSES <- es(methane_train_ts,model="ZZZ",h=36,holdout=FALSE)
+
+SSES_for <-forecast(SSES,h=36, interval="prediction")
+
+plot(SSES_for)
+
+forecast_SSES_accuracy <- accuracy(SSES$forecast, methane_test_ts)
+
+print(forecast_SSES_accuracy)
+```
+
+## State Space - BSM
+
+```{r}
+SSBSM <- StructTS(methane_train_ts,
+                    type="BSM",fixed=c(NA,NA,NA,NA))
+
+SSBSM_for <- forecast(SSBSM,h=36)
+
+plot(SSBSM_for)
+
+forecast_SSBSM_accuracy <- accuracy(SSBSM_for$mean,methane_test_ts)
+
+print(forecast_SSBSM_accuracy)
+
+```
 
 # Visualization
 ```{r}
-methane_all <- read.csv("./Data/Processed/methane_all.csv")
+methane_all <- read.csv("../Data/Processed/methane_all.csv")
 methane_all_ts <- ts(
   methane_all$average,
   start = c(1983, 7),
@@ -235,7 +295,19 @@ autoplot(methane_all_ts) +
   autolayer(tbats_forecast$mean,
             series = "TBATS",
             PI = FALSE) +
-  autolayer(window(methane_full_ts, start = c(2022, 1)),
+  autolayer(NN_for$mean,
+            series = "Neuron Network",
+            PI = FALSE) +
+  autolayer(NN_fourier_for$mean,
+            series = "Neuron Network + Fourier",
+            PI = FALSE) +
+  autolayer(SSES_for$mean,
+            series = "State Space - Smooth",
+            PI = FALSE) +
+  autolayer(SSBSM_for$mean,
+            series = "State Space - BSM",
+            PI = FALSE) +
+  autolayer(window(methane_all_ts, start = c(2022, 1)),
             series = "True Data") +
   labs(title = "Methane Forecasts",
        y = "Methane Concentration (ppb)",
@@ -251,7 +323,11 @@ forecast_performance <- data.frame(rbind(
   forecast_sarima_accuracy,
   forecast_arima_fourier_accuracy,
   stl_ets_accuracy,
-  tbats_accuracy
+  tbats_accuracy,
+  forecast_NN_accuracy,
+  forecast_NN_fourier_accuracy,
+  forecast_SSES_accuracy,
+  forecast_SSBSM_accuracy
 ))
 
 rownames(forecast_performance) <- c(
@@ -259,7 +335,11 @@ rownames(forecast_performance) <- c(
   "SARIMA",
   "ARIMA + Fourier",
   "STL + ETS",
-  "TBATS"
+  "TBATS",
+  "Neuron Network",
+  "Neuron Network + Fourier",
+  "State Space - Smooth",
+  "State Space - BSM"
 )
 
 
