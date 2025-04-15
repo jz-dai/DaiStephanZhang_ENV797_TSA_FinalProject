@@ -1,0 +1,271 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r chunks, include=FALSE}
+#set up chunk options
+knitr::opts_chunk$set(echo = TRUE,tidy.opts=list(width.cutoff=80), 
+                      tidy=FALSE) 
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+```
+
+```{r libraries, include=FALSE}
+#retrieve libraries
+library(here)
+library(ggplot2)
+library(forecast)
+library(cowplot)
+library(Kendall)
+library(tseries)
+library(lubridate)
+library(kableExtra)
+
+set.seed(797)
+```
+
+```{r theme, include=FALSE}
+#create plot theme
+mytheme <- theme_bw(base_size = 10)+
+  theme(axis.title = element_text(size = 10, hjust = 0.5),
+        plot.title.position = "panel",
+        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.25),
+        plot.caption = element_text(hjust = 0),
+        legend.box = "vertical",
+        legend.location = "plot",
+        axis.gridlines = element_line(color = "grey", linewidth = 0.25),
+        axis.ticks = element_line(color = "black", linewidth = 0.5),
+        axis.grid = element_blank())
+
+#set plot theme
+theme_set(mytheme)
+```
+
+# Preparation
+
+```{r include=FALSE}
+#upload test and training data
+methane_train <- read.csv("./Data/Processed/methane_training.csv")
+methane_test <- read.csv("./Data/Processed/methane_test.csv")
+
+#create ts object
+methane_train_ts <-ts(methane_train$average, 
+                start = c(1983,7), 
+                end = c(2021, 12), 
+                frequency = 12)
+
+methane_test_ts <-ts(methane_test$average, 
+                start = c(2022,1), 
+                end = c(2024, 12), 
+                frequency = 12)
+
+#create msts
+methane_train_msts <- msts(methane_train$average, 
+                            seasonal.periods =c(4,12),
+                            start=c(1983,7)) 
+
+methane_test_msts <- msts(methane_test$average, 
+                            seasonal.periods =c(4,12),
+                            start=c(2022,1))
+```
+
+## Deseason Data
+
+```{r echo=FALSE}
+#decompose the training series
+decomposed <- decompose(methane_train_ts, type = "additive")
+plot(decomposed)
+```
+
+```{r echo=FALSE}
+#detrend and deseason the series
+methane_trend <- decomposed$trend
+methane_seasonality <- decomposed$seasonal
+methane_detrend <- methane_train_ts - methane_trend
+methane_deseasoned <- methane_train_ts - methane_seasonality
+```
+
+# Forecasting Models
+
+## ARIMA
+
+```{r echo=FALSE}
+#autofit the sarima model
+arima_autofit <- auto.arima(methane_deseasoned, 
+                            max.D = 0, 
+                            max.P = 0, 
+                            max.Q = 0)
+print(arima_autofit)
+
+#get residuals
+checkresiduals(arima_autofit)
+
+#create the sarima forecast with the autofit
+forecast_arima <- forecast(object = arima_autofit, h = 36)
+
+#calculate accuracy metrics
+forecast_arima_accuracy <- accuracy(forecast_arima$mean, methane_test_ts)
+
+#plot the forecast
+plot(forecast_arima)
+```
+
+The ARIMA auto-fit was: ARIMA(5,2,4).
+
+The residuals look pretty good. Otherwise, the residuals are primarily not significant in the ACF plot and are normally distributed.
+
+## SARIMA
+
+```{r echo=FALSE}
+#autofit the sarima model
+sarima_autofit <- auto.arima(methane_train_ts)
+print(sarima_autofit)
+
+#get residuals
+checkresiduals(sarima_autofit)
+
+#create the sarima forecast with the autofit
+forecast_sarima <- forecast(object = sarima_autofit, h = 36)
+
+#calculate accuracy metrics
+forecast_sarima_accuracy <- accuracy(forecast_sarima$mean, methane_test_ts)
+
+#plot the forecast
+plot(forecast_sarima)
+```
+
+The SARIMA auto-fit was: ARIMA(2,1,2)(1,1,1)[12].
+
+The residuals look pretty good. There is one notable outlier. Otherwise, the residuals are primarily not significant in the ACF plot and are normally distributed.
+
+## ARIMA with Fourier
+
+```{r echo=FALSE}
+#autofit the arima model
+arima_fourier_autofit <- auto.arima(methane_train_msts,
+                                    seasonal=FALSE,
+                                    lambda=0,
+                                    xreg=fourier(methane_train_msts,
+                                                 K=c(2,6)))
+print(arima_fourier_autofit)
+
+#get residuals
+checkresiduals(arima_fourier_autofit)
+
+#create the arima forecast with the autofit
+forecast_arima_fourier <- forecast(object = arima_fourier_autofit,
+                                   xreg=fourier(methane_train_msts,
+                                                K=c(2,6),
+                                                h=36),
+                                   h=365)
+  
+#calculate accuracy metrics
+forecast_arima_fourier_accuracy <- accuracy(forecast_arima_fourier$mean, methane_test_msts)
+
+#plot the forecast
+plot(forecast_arima_fourier)
+```
+
+## STL+ETS 
+
+```{r}
+#fit STL with ETS
+stl_ets_fit <- stlm(methane_train_ts, s.window = "periodic", method = "ets")
+print(stl_ets_fit$model)
+
+#forecasting test data
+stl_ets_forecast <- forecast(stl_ets_fit, h = length(methane_test_ts))
+
+#accuracy assessment
+stl_ets_accuracy <- accuracy(stl_ets_forecast$mean, methane_test_ts)
+
+#visualization
+plot(stl_ets_forecast)
+```
+
+## TBATS 
+
+```{r}
+#fit TBATS
+tbats_fit <- tbats(methane_train_msts)
+print(tbats_fit)
+checkresiduals(tbats_fit)
+
+#forecasting test data
+tbats_forecast <- forecast(tbats_fit, h = length(methane_test_ts))
+
+#accuracy assessment
+tbats_accuracy <- accuracy(tbats_forecast$mean, methane_test_ts)
+
+#visualization
+plot(tbats_forecast)
+```
+
+
+# Visualization
+```{r}
+methane_all <- read.csv("./Data/Processed/methane_all.csv")
+methane_all_ts <- ts(
+  methane_all$average,
+  start = c(1983, 7),
+  frequency = 12
+)
+
+arima_forecast_seasoned <- ts(
+  forecast_arima$mean + decomposed$seasonal[length(methane_train_ts) + 1:36],
+  start = c(2022, 1),
+  frequency = 12
+)
+
+
+autoplot(methane_all_ts) +
+  autolayer(arima_forecast_seasoned,
+            series = "ARIMA (reseasoned)",
+            PI = FALSE) +
+  autolayer(forecast_sarima$mean,
+            series = "SARIMA",
+            PI = FALSE) +
+  autolayer(forecast_arima_fourier$mean,
+            series = "ARIMA + Fourier",
+            PI = FALSE) +
+  autolayer(stl_ets_forecast$mean,
+            series = "STL + ETS",
+            PI = FALSE) +
+  autolayer(tbats_forecast$mean,
+            series = "TBATS",
+            PI = FALSE) +
+  autolayer(window(methane_full_ts, start = c(2022, 1)),
+            series = "True Data") +
+  labs(title = "Methane Forecasts",
+       y = "Methane Concentration (ppb)",
+       x = "Time",
+       col = "Models") +
+  coord_cartesian(xlim = c(2021, 2024), ylim = c(1885, 1935))
+
+```
+
+```{r}
+forecast_performance <- data.frame(rbind(
+  forecast_arima_accuracy,
+  forecast_sarima_accuracy,
+  forecast_arima_fourier_accuracy,
+  stl_ets_accuracy,
+  tbats_accuracy
+))
+
+rownames(forecast_performance) <- c(
+  "ARIMA (reseasoned)",
+  "SARIMA",
+  "ARIMA + Fourier",
+  "STL + ETS",
+  "TBATS"
+)
+
+
+kable(forecast_performance,
+      caption = "Forecast Accuracy Metrics for All Models",
+      digits = 3,
+      booktabs = TRUE)
+```
+
