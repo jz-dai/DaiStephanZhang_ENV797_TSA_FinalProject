@@ -5,7 +5,7 @@ output:
     df_print: paged
   pdf_document: default
 editor_options:
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 ```{r chunks, include=FALSE}
@@ -181,29 +181,17 @@ checkresiduals(arima_autofit)
 #create the sarima forecast with the autofit
 forecast_arima <- forecast(object = arima_autofit, h = 36) 
 
-# Recreate repeating seasonal pattern (fixed for classical decomposition)
-seasonal_pattern <- head(methane_seasonality, 12)
-
-# Repeat it to match 36 months
-seasonality_future <- ts(rep(seasonal_pattern, 3),
-                         start = c(2022, 1),
-                         frequency = 12)
-
-arima_forecast_seasoned <- ts(forecast_arima$mean + decomposed$seasonal[length(methane_train_ts) + 1:36],
+#add seasonality
+forecast_arima_seasoned <- ts(
+  forecast_arima$mean + decomposed$seasonal[length(methane_train_ts) + 1:36],
   start = c(2022, 1),
-  frequency = 12
-)
-
-# Add seasonality back into forecast
-forecast_arima$mean <- forecast_arima$mean + seasonality_future
-forecast_arima$lower <- forecast_arima$lower + seasonality_future
-forecast_arima$upper <- forecast_arima$upper + seasonality_future
+  frequency = 12)
 
 #calculate accuracy metrics
-forecast_arima_accuracy <- accuracy(forecast_arima$mean, methane_test_ts)
+forecast_arima_accuracy <- accuracy(forecast_arima_seasoned[1:35], methane_test_ts)
 
 #plot the forecast
-plot(forecast_arima)
+#autoplot(forecast_arima_seasoned)
 ```
 
 The ARIMA auto-fit was: ARIMA(5,2,4).
@@ -398,7 +386,7 @@ kable(forecast_performance[,1:6],
 ```{r}
 autoplot(methane_all_ts) +
   autolayer(stl_ets_forecast, PI=FALSE, series="STL+ETS", alpha = 0.75) +
-  autolayer(forecast_arima, PI=FALSE, series="ARIMA", alpha = 0.75) +
+  autolayer(forecast_arima_seasoned, PI=FALSE, series="ARIMA", alpha = 0.75) +
   autolayer(forecast_sarima, PI=FALSE, series="SARIMA", alpha = 0.75) +
   autolayer(forecast_arima_fourier, PI=FALSE, series="ARIMA + Fourier", alpha = 0.75) +
   autolayer(tbats_forecast,PI=FALSE, series="TBATS", alpha = 0.75) +
@@ -411,6 +399,6 @@ autoplot(methane_all_ts) +
        title = "Methane Forecasts") +
   guides(colour=guide_legend(title="Forecast"))+
   xlim(c(2021 + 5/12, 2024 + 10/12))+
-  ylim(c(1875,1960))
+  ylim(c(1880,1960))
 ```
 
