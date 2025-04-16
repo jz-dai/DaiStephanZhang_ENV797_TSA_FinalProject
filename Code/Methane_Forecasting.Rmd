@@ -444,8 +444,10 @@ row.names(avg_forecasts_accuracy) <- colnames(avg_forecasts_df)
 #get best averaged forecasts
 avg_forecasts_accuracy_best <- avg_forecasts_accuracy %>%
   arrange(abs(MAPE)) %>%
-  head(10)
+  head(10) #get 10 best forecasts
 ```
+
+
 
 # All Forecasts Plot
 
