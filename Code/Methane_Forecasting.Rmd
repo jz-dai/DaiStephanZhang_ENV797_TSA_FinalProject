@@ -179,7 +179,7 @@ print(arima_autofit)
 checkresiduals(arima_autofit)
 
 #create the sarima forecast with the autofit
-forecast_arima <- forecast(object = arima_autofit, h = 36) 
+forecast_arima <- forecast(object = arima_autofit, h = length(methane_test_ts)) 
 
 #add seasonality
 forecast_arima_seasoned <- ts(
@@ -209,7 +209,7 @@ print(sarima_autofit)
 checkresiduals(sarima_autofit)
 
 #create the sarima forecast with the autofit
-forecast_sarima <- forecast(object = sarima_autofit, h = 36)
+forecast_sarima <- forecast(object = sarima_autofit, h = length(methane_test_ts))
 
 #calculate accuracy metrics
 forecast_sarima_accuracy <- accuracy(forecast_sarima$mean, methane_test_ts)
@@ -240,8 +240,8 @@ checkresiduals(arima_fourier_autofit)
 forecast_arima_fourier <- forecast(object = arima_fourier_autofit,
                                    xreg=fourier(methane_train_msts,
                                                 K=c(2,6),
-                                                h=36),
-                                   h=365)
+                                                h=length(methane_test_ts)),
+                                   h=length(methane_test_ts))
   
 #calculate accuracy metrics
 forecast_arima_fourier_accuracy <- accuracy(forecast_arima_fourier$mean, methane_test_msts)
@@ -291,7 +291,7 @@ plot(tbats_forecast)
 
 NN_fit <- nnetar(methane_train_ts, p = 1, P = 7)
 
-NN_for <- forecast(NN_fit, h=36)
+NN_for <- forecast(NN_fit, h = length(methane_test_ts))
 
 forecast_NN_accuracy <- accuracy(NN_for$mean, methane_test_ts)
 
@@ -306,7 +306,7 @@ plot(NN_for)
 NN_fourier_fit <- nnetar(methane_train_msts, p = 0, P = 7,
                  xreg=fourier(methane_train_msts,K=c(2,6)))
 
-NN_fourier_for <- forecast(NN_fourier_fit, h=36, xreg=fourier(methane_train_msts,K=c(2,6), h=36))
+NN_fourier_for <- forecast(NN_fourier_fit, h=length(methane_test_ts), xreg=fourier(methane_train_msts,K=c(2,6), h=length(methane_test_ts)))
 
 forecast_NN_fourier_accuracy <- accuracy(NN_fourier_for$mean, methane_test_msts)
 
@@ -320,9 +320,14 @@ plot(NN_fourier_for)
 
 ```{r}
 
-SSES <- es(methane_train_ts,model="ZZZ",h=36,holdout=FALSE)
+SSES <- es(methane_train_ts,
+           model="ZZZ",
+           h=length(methane_test_ts),
+           holdout=FALSE)
 
-SSES_for <-forecast(SSES,h=36, interval="prediction")
+SSES_for <-forecast(SSES,
+                    h = length(methane_test_ts), 
+                    interval="prediction")
 
 plot(SSES_for)
 
@@ -339,7 +344,7 @@ print(forecast_SSES_accuracy)
 SSBSM <- StructTS(methane_train_ts,
                     type="BSM",fixed=c(NA,NA,NA,NA))
 
-SSBSM_for <- forecast(SSBSM,h=36)
+SSBSM_for <- forecast(SSBSM,h=length(methane_test_ts))
 
 plot(SSBSM_for)
 
@@ -348,6 +353,7 @@ forecast_SSBSM_accuracy <- accuracy(SSBSM_for$mean,methane_test_ts)
 print(forecast_SSBSM_accuracy)
 
 ```
+
 
 # Performance Comparison
 
@@ -379,6 +385,66 @@ rownames(forecast_performance) <- c("ARIMA",
 kable(forecast_performance[,1:6], 
       caption = "Forecast Accuracy",
       digits = 3)
+```
+
+# Averaging
+## Averaged Models
+
+Averaging every combination of the models will result in 
+
+```{r}
+#create a dataframe of all of the forecasts
+forecasts <- data.frame(
+  "arima" = forecast_arima$mean,
+  "sarima" = forecast_sarima$mean,
+  "arimaFourier" = forecast_arima_fourier$mean,
+  "stlEts" = stl_ets_forecast$mean,
+  "tbats" = tbats_forecast$mean,
+  "NN" = NN_for$mean,
+  "NNFourier" = NN_fourier_for$mean,
+  "SSSmooth" = SSES_for$mean,
+  "SSBSM" = SSBSM_for$mean)
+
+# Get column names
+col_names <- names(forecasts)
+
+# Initialize empty list to hold averaged columns
+avg_forecasts <- list()
+
+# Loop over sizes of combinations (from 2 to 9 models)
+for (r in 2:length(col_names)) {
+  combos <- combn(col_names, r, simplify = FALSE)
+  
+  for (combo in combos) {
+    combo_name <- paste(combo, collapse = "_")
+    avg_forecasts[[combo_name]] <- rowMeans(forecasts[, combo, drop = FALSE])
+  }
+}
+
+# Convert to a data frame
+avg_forecasts_df <- as.data.frame(avg_forecasts)
+```
+
+Get the performance of each combination and save the top 10 to a separate dataframe
+
+```{r}
+avg_forecasts_accuracy <- data.frame(matrix(ncol = 7, nrow = 0))
+
+#provide column names
+colnames(avg_forecasts_accuracy) <- c('ME', 'RSME', 'MAE', "MPE", "MAPE", "ACF1", "Theil.s.U")
+
+#calculate accuracy statistics
+for (i in 1:length(avg_forecasts_df)) {
+  avg_forecasts_accuracy[i,] <- accuracy(avg_forecasts_df[,i], methane_test_ts)
+}
+
+#set row names
+row.names(avg_forecasts_accuracy) <- colnames(avg_forecasts_df)
+
+#get best averaged forecasts
+avg_forecasts_accuracy_best <- avg_forecasts_accuracy %>%
+  arrange(abs(MAPE)) %>%
+  head(10)
 ```
 
 # All Forecasts Plot

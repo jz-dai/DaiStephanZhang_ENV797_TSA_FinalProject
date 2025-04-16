@@ -12,19 +12,20 @@ Z - assigned to John
 z - currently in progress by John
 
 Tasks:
-  *Background Information*
-  Due: April 15, 2025
+  Report Write-Up {final_report.rmd}:
+  Due: 
     [ ] General importance of methane concentrations (see first presentation)
         [R] Greenhouse gas & GH Effect (temperature)
         [J] Major contributors (beef production)
-        [ ] 
+    [ ] Interpret stationarity tests
+    [ ] Interpret ACF/PACF tests
     
-  *Forecast the methane data*
-  Due: April 15, 2025
+  Forecast the methane data {Methane_forecasting}:
+  Due: 
     [x] ACF/PACF & decomposition (detrended datasets)
     [x] Determine which models to use. Justify why (if any) models are not included
     [x] Correlation of beef production and social economic factors to methane
-    [x] Model only the methane data
+    [ ] Model only the methane data
         [x] ARIMA
         [x] ARIMA with Fourier
         [x] SARIMA
@@ -32,48 +33,59 @@ Tasks:
         [x] STL + ETS
         [x] TBATS
         [x] State Space
+        [r] Average the models
   
   Forecast the methane data with beef predictor:
     [ ] ARIMA
     [ ] ARIMA with Fourier
     [ ] SARIMA
-    [ ] SARIMA with Fourier
     [ ] Neural Network
     [ ] STL + ETS
     [ ] TBATS
     [ ] State Space
+    [ ] Average the models
     
   Forecast the methane data with social predictor:
     [ ] ARIMA
     [ ] ARIMA with Fourier
     [ ] SARIMA
-    [ ] SARIMA with Fourier
     [ ] Neural Network
     [ ] STL + ETS
     [ ] TBATS
     [ ] State Space
+    [ ] Average the models
     
   Forecast the methane data with both predictors:
     [ ] ARIMA
     [ ] ARIMA with Fourier
     [ ] SARIMA
-    [ ] SARIMA with Fourier
     [ ] Neural Network
     [ ] STL + ETS
     [ ] TBATS
     [ ] State Space
+    [ ] Average the models
   
-  Forecast the temperature with methane and predictors (i.e., with most accurate model from above)
-    [ ] ARIMA
-    [ ] ARIMA with Fourier
-    [ ] SARIMA
-    [ ] SARIMA with Fourier
-    [ ] Neural Network
-    [ ] STL + ETS
-    [ ] TBATS
-    [ ] State Space
+  Forecast the temperature with methane and predictors {temperature_forecast}
+  (i.e., with most accurate model from above)
+    [R] ARIMA
+    [R] ARIMA with Fourier
+    [R] SARIMA
+    [R] Neural Network
+    [R] STL + ETS
+    [R] TBATS
+    [R] State Space
+    [ ] Average the models
     
   Determine best model
     [ ] Compare all previously calculated performance statistics
+    [ ] Determine best methane model
+    [ ] Determine best temperature model
+    [ ] Forecast temperature 5-10 years into the future
+    
+  Project Workspace
+    [R] Update ReadMe for the project
+    [ ] Format the final report
+    [RJZ] Remove and condense files to give a clean look
+      
 
 *Tasks with an asterisk should be completed by Tuesday April 15, 2025 and should be included in the presentation given to the class.
