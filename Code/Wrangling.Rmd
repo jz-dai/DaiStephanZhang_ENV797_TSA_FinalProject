@@ -22,6 +22,7 @@ library(forecast)
 library(cowplot)
 library(Kendall)
 library(tseries)
+library(lubridate)
 ```
 
 ```{r theme, include=FALSE}
@@ -41,6 +42,8 @@ mytheme <- theme_bw(base_size = 10)+
 theme_set(mytheme)
 ```
 
+#Methane Data
+
 ```{r data_retrieval}
 #retrieve column names
 header <- read.csv("./Data/Raw/noaa_ch4_monthly.csv", skip = 45, header = FALSE)
@@ -51,6 +54,9 @@ methane <- read.csv("./Data/Raw/noaa_ch4_monthly.csv", skip = 47, header = FALSE
 
 #set column names
 colnames(methane) <- header
+
+#create date column
+methane$date <- make_date(year = methane$year, month = methane$month, day = 1)
 
 #check for missing data
 sum(is.na(methane))
@@ -89,5 +95,69 @@ methane_train_ts <-ts(methane_training$average,
 autoplot(methane_train_ts)+
   labs(title = "Globally Averaged Atmospheric Methane Concentrations from 1983 to 2021",
        y = "Methane (ppb)")
+```
+
+# Temperature Data
+
+```{r data_retrieval}
+
+#retrieve monthly data
+tempanom <- read.csv("./Data/Raw/temperature_anomaly.csv", skip = 5, header = FALSE) %>%
+  mutate(V1 = ym(V1))
+
+#set column names
+colnames(tempanom) <- c("date", "temp_anomaly")
+
+#check for missing data
+sum(is.na(tempanom))
+
+#summary of the dataset
+summary(tempanom$temp_anomaly)
+```
+
+```{r}
+#subset data into training (1983-2021) and test data (2022-2024)
+tempanom_training <- subset(tempanom, year(date) <= 2021 & year(date) >= 1983)
+tempanom_test <- subset(tempanom, year(date) >= 2022 & date <= max(methane$date))
+
+#save data to processed folder
+write.csv(tempanom, 
+          file = "./Data/Processed/tempanom_all.csv",
+          row.names=FALSE)
+
+write.csv(tempanom_test, 
+          file = "./Data/Processed/tempanom_test.csv",
+          row.names=FALSE)
+
+write.csv(tempanom_training, 
+          file = "./Data/Processed/tempanom_training.csv",
+          row.names=FALSE)
+```
+
+```{r}
+#process data out into relevant types of groupings
+#by year
+temp_anomaly_yearly <- tempanom %>%
+  mutate(year = year(date)) %>%
+  group_by(year) %>%
+  summarize(year_anomaly = mean(temp_anomaly))
+
+temp_anomaly_yearly_train <- temp_anomaly_yearly %>%
+  filter(year >= 1983 & year <= 2021)
+
+temp_anomaly_yearly_test <- temp_anomaly_yearly %>%
+  filter(year >= 2022 & year <= 2024)
+
+write.csv(temp_anomaly_yearly, 
+          file = "./Data/Processed/tempanom_year_all.csv",
+          row.names = FALSE)
+
+write.csv(temp_anomaly_yearly_test, 
+          file = "./Data/Processed/tempanom_year_test.csv",
+          row.names = FALSE)
+
+write.csv(temp_anomaly_yearly_train, 
+          file = "./Data/Processed/tempanom_year_train.csv",
+          row.names = FALSE)
 ```
 
