@@ -168,7 +168,7 @@ print(cor.test(methane_train_ts,c(1:462),method="spearman"))
 ## ARIMA
 
 ```{r echo=FALSE}
-#autofit the sarima model
+#autofit the sarima model 
 arima_autofit <- auto.arima(methane_deseasoned, 
                             max.D = 0, 
                             max.P = 0, 
@@ -182,16 +182,14 @@ checkresiduals(arima_autofit)
 forecast_arima <- forecast(object = arima_autofit, h = length(methane_test_ts)) 
 
 #add seasonality
-forecast_arima_seasoned <- ts(
-  forecast_arima$mean + decomposed$seasonal[length(methane_train_ts) + 1:36],
-  start = c(2022, 1),
-  frequency = 12)
+forecast_arima <- forecast_arima$mean + rep(tail(methane_seasonality, 12), 
+                                                length.out = length(methane_test_ts))
 
 #calculate accuracy metrics
-forecast_arima_accuracy <- accuracy(forecast_arima_seasoned[1:35], methane_test_ts)
+forecast_arima_accuracy <- accuracy(forecast_arima, methane_test_ts)
 
 #plot the forecast
-#autoplot(forecast_arima_seasoned)
+autoplot(forecast_arima)
 ```
 
 The ARIMA auto-fit was: ARIMA(5,2,4).
@@ -454,7 +452,7 @@ avg_forecasts_accuracy_best <- avg_forecasts_accuracy %>%
 ```{r}
 autoplot(methane_all_ts) +
   autolayer(stl_ets_forecast, PI=FALSE, series="STL+ETS", alpha = 0.75) +
-  autolayer(forecast_arima_seasoned, PI=FALSE, series="ARIMA", alpha = 0.75) +
+  autolayer(forecast_arima, PI=FALSE, series="ARIMA", alpha = 0.75) +
   autolayer(forecast_sarima, PI=FALSE, series="SARIMA", alpha = 0.75) +
   autolayer(forecast_arima_fourier, PI=FALSE, series="ARIMA + Fourier", alpha = 0.75) +
   autolayer(tbats_forecast,PI=FALSE, series="TBATS", alpha = 0.75) +

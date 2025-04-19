@@ -117,7 +117,7 @@ summary(tempanom$temp_anomaly)
 
 ```{r}
 #subset data into training (1983-2021) and test data (2022-2024)
-tempanom_training <- subset(tempanom, year(date) <= 2021 & year(date) >= 1983)
+tempanom_training <- subset(tempanom, date >= min(methane$date) & year(date) < 2022)
 tempanom_test <- subset(tempanom, year(date) >= 2022 & date <= max(methane$date))
 
 #save data to processed folder

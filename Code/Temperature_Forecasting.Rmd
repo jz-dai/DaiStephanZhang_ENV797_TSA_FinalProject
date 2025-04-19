@@ -124,3 +124,47 @@ PACF_Plot <- autoplot(Pacf(tempanom_train_ts, lag=40, plot = FALSE),
                       main="PACF plot")
 plot_grid(ACF_Plot, PACF_Plot)
 ```
+
+# Correlations
+
+```{r}
+
+methane_temp <- data.frame(methane = methane_train$average,
+                           tempanom = tempanom_train$temp_anomaly)
+
+methane_temp_cor <- cor(methane_temp)
+```
+
+# Model Fitting
+
+```{r}
+arimax_fit <- auto.arima(tempanom_train_ts,
+                         xreg = methane_train_ts)
+summary(arimax_fit)
+checkresiduals(arimax_fit)
+
+forecast_arimax <- forecast(arimax_fit, 
+                            xreg = methane_test_ts, 
+                            h = length(methane_test))
+```
+
+```{r}
+fit <- nnetar(tempanom_train_msts, xreg = methane_train_msts)
+forecasted <- forecast(fit, xreg = methane_test_msts)
+
+```
+
+Models to check out:
+
+VAR (Vector AutoRegression) models
+Random Forests, Gradient Boosting, and Neural Networks
+https://stackoverflow.com/questions/51764339/how-to-predict-using-var-with-exogenous-variables-in-r 
+LSTM
+
+Seasonal Autoregressive Integrated Moving-Average with Exogenous Regressors (SARIMAX) with Exogenous Regressors (SARIMAX) is an extension of the SARIMA model that also includes the modeling of exogenous variables.
+
+The SARIMAX method can also be used to model the subsumed models with exogenous variables, such as ARX, MAX, ARMAX, and ARIMAX.
+
+The method is suitable for univariate time series with trend and/or seasonal components and exogenous variables.
+
+Vector Autoregression Moving-Average with Exogenous Regressors (VARMAX) is an extension of the VARMA model that also includes the modeling of exogenous variables. It is a multivariate version of the ARMAX method.

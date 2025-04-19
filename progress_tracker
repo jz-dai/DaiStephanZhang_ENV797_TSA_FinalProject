@@ -33,7 +33,7 @@ Tasks:
         [x] STL + ETS
         [x] TBATS
         [x] State Space
-        [r] Average the models
+        [x] Average the models
   
   Forecast the methane data with beef predictor:
     [ ] ARIMA
@@ -67,13 +67,11 @@ Tasks:
   
   Forecast the temperature with methane and predictors {temperature_forecast}
   (i.e., with most accurate model from above)
-    [R] ARIMA
-    [R] ARIMA with Fourier
-    [R] SARIMA
+    [r] ARIMAX
+    [R] ARIMAX with Fourier?? Is this possible?
+    [R] SARIMAX
     [R] Neural Network
-    [R] STL + ETS
-    [R] TBATS
-    [R] State Space
+    [R] VARMAX
     [ ] Average the models
     
   Determine best model
