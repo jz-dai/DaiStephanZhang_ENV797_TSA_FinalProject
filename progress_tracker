@@ -67,12 +67,12 @@ Tasks:
   
   Forecast the temperature with methane and predictors {temperature_forecast}
   (i.e., with most accurate model from above)
-    [r] ARIMAX
+    [x] ARIMAX
     [R] ARIMAX with Fourier?? Is this possible?
     [R] SARIMAX
-    [R] Neural Network
+    [x] Neural Network
     [R] VARMAX
-    [ ] Average the models
+    [r] Average the models
     
   Determine best model
     [ ] Compare all previously calculated performance statistics

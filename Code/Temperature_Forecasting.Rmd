@@ -97,10 +97,9 @@ tempanom_test_ts <-ts(tempanom_test$temp_anomaly,
                 end = c(2024, 11), 
                 frequency = 12)
 
-tempanom_all_ts <-ts(tempanom_all$temp_anomaly, 
-                start = c(1983,7), 
-                end = c(2024, 11), 
-                frequency = 12)
+tempanom_all_ts <-ts(c(tempanom_train_ts,tempanom_test_ts), 
+                     start=start(tempanom_train_ts), 
+                     frequency=frequency(tempanom_train_ts))
 
 #create msts
 tempanom_train_msts <- msts(tempanom_train$temp_anomaly, 
@@ -122,38 +121,135 @@ ACF_Plot <- autoplot(Acf(tempanom_train_ts, lag=40, plot = FALSE),
 PACF_Plot <- autoplot(Pacf(tempanom_train_ts, lag=40, plot = FALSE), 
                       ylim=c(-0.5,1), 
                       main="PACF plot")
+
+#create plot grid
 plot_grid(ACF_Plot, PACF_Plot)
 ```
 
 # Correlations
 
 ```{r}
-
+#create df
 methane_temp <- data.frame(methane = methane_train$average,
                            tempanom = tempanom_train$temp_anomaly)
 
+#determine correlation within the df
 methane_temp_cor <- cor(methane_temp)
 ```
 
 # Model Fitting
 
+## Exogenous Variables
+
+### ARIMAX
+
 ```{r}
+#autofit arimax
 arimax_fit <- auto.arima(tempanom_train_ts,
                          xreg = methane_train_ts)
+#get summary
 summary(arimax_fit)
+
+#check residuals
 checkresiduals(arimax_fit)
 
+#create forecast
 forecast_arimax <- forecast(arimax_fit, 
                             xreg = methane_test_ts, 
                             h = length(methane_test))
+
+#calculate accuracy metrics
+forecast_arimax_accuracy <- accuracy(forecast_arimax$mean, tempanom_test_ts)
 ```
 
 ```{r}
-fit <- nnetar(tempanom_train_msts, xreg = methane_train_msts)
-forecasted <- forecast(fit, xreg = methane_test_msts)
+#autofit arimax
+nnetar_fit <- nnetar(tempanom_train_msts, 
+              xreg = methane_train_msts,
+              repeats = 10)
+
+#get summary
+summary(nnetar_fit)
+
+#check residuals
+checkresiduals(nnetar_fit)
+
+#create forecast
+forecast_nnetar <- forecast(nnetar_fit, 
+                            xreg = methane_test_msts, 
+                            h = length(methane_test))
+
+#calculate accuracy metrics
+forecast_nnetar_accuracy <- accuracy(forecast_nnetar$mean, tempanom_test_msts)
+```
+
+# Performance Comparison
+
+```{r echo=FALSE}
+# Combine performance vectors as rows
+forecast_performance <- data.frame(rbind(forecast_arimax_accuracy, 
+                                         forecast_nnetar_accuracy))
+
+# Set row names
+rownames(forecast_performance) <- c("ARIMAX",
+                                    "NNETAR")
+```
+
+```{r echo=FALSE}
+kable(forecast_performance[,1:6], 
+      caption = "Forecast Accuracy",
+      digits = 3)
+```
+
+# Plot
+
+```{r}
+autoplot(tempanom_train_ts) +
+  geom_line(data = tempanom_test_ts, colour = "grey40") +
+  autolayer(forecast_nnetar, PI = FALSE, series = "NNETAR") +
+  autolayer(forecast_arimax, PI = FALSE, series = "ARIMAX") +
+  labs(x = "Time",
+       y = "Temperature Anomaly (*C)",
+       title = "Temperature Anomaly over Time") +
+  guides(colour = guide_legend(title = "Forecast")) +
+  xlim(c(2010, 2025))+
+  ylim(c(0.4,1.5))
 
 ```
 
+# Averaging
+## Averaged Models
+
+Averaging every combination of the models will result in 
+
+```{r}
+#create a dataframe of all of the forecasts
+forecasts <- data.frame(
+  "arimax" = forecast_arimax$mean,
+  "NNETAR" = forecast_nnetar$mean)
+
+# Get column names
+col_names <- names(forecasts)
+
+# Initialize empty list to hold averaged columns
+avg_forecasts <- list()
+
+# Loop over sizes of combinations (from 2 to 9 models)
+for (r in 2:length(col_names)) {
+  combos <- combn(col_names, r, simplify = FALSE)
+  
+  for (combo in combos) {
+    combo_name <- paste(combo, collapse = "_")
+    avg_forecasts[[combo_name]] <- rowMeans(forecasts[, combo, drop = FALSE])
+  }
+}
+
+# Convert to a data frame
+avg_forecasts_df <- as.data.frame(avg_forecasts)
+```
+
+
+# Notes
 Models to check out:
 
 VAR (Vector AutoRegression) models
