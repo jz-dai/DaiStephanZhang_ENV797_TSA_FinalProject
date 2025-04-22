@@ -65,53 +65,15 @@ methane_test_msts <- window(methane_all_msts, start=c(2022,1))
 
 # Predictions
 
-## Neuron Network
 
-### Choose the best variable combination
-```{r include=FALSE}
-
-variables <- list(c(2),c(2,3),c(2,4),c(2,5),c(2,3,4),c(2,3,5),c(2,4,5),c(2,3,4,5),c(3),c(3,4),c(3,5),c(3,4,5),c(4),c(4,5),c(5))
-
-for(variable in variables){
-  
-  NN_fit <- nnetar(methane_train_ts[,1], xreg = methane_train_ts[,variable], p = 0, P = 7, repeats = 50)
-
-  NN_for <- forecast(NN_fit, xreg = methane_test_ts[,variable], h=36)
-  
-  forecast_NN_accuracy <- accuracy(NN_for$mean, methane_test_ts[,1])
-  
-  cat(variable,":\n")
-  
-  print(forecast_NN_accuracy)
-}
-
-
-
-```
-
-# Best model of Neural Network
-
-```{r}
-
-NN_fit <- nnetar(methane_train_ts[,1], xreg = methane_train_ts[,c(2,3,4)], p = 0, P = 7)
-
-NN_for <- forecast(NN_fit, xreg = methane_test_ts[,c(2,3,4)], h=35)
-
-forecast_NN_accuracy <- accuracy(NN_for$mean, methane_test_ts[,1])
-
-print(forecast_NN_accuracy)
-
-plot(NN_for)
-
-```
-
-
+## Arima
 
 ### Choose the best variable combination
 
 ```{r echo=FALSE}
 
 variables <- list(c(2),c(3),c(4),c(5))
+result <- list()
 
 for(variable in variables){
   
@@ -129,6 +91,10 @@ forecast_arima <- forecast(object = arima_autofit, h = 35,xreg = methane_test_ts
 #calculate accuracy metrics
 forecast_arima_accuracy <- accuracy(forecast_arima$mean, methane_test_ts[,1])
   
+  result_list <- data.frame(Variable_colnum = variable, RMSE = forecast_arima_accuracy[,"MAPE"])
+  
+  result <- append(result,list(result_list))
+  
   cat(variable,":\n")
   
   print(forecast_arima_accuracy)
@@ -136,46 +102,168 @@ forecast_arima_accuracy <- accuracy(forecast_arima$mean, methane_test_ts[,1])
 
 }
 
-```
-Best model:
-- Factor: Number 5 (ip)
+rmse_values <- sapply(result, function(x) x$RMSE)
 
-## Best model of Arima
+best_index <- which.min(rmse_values)
+
+best_result <- result[[best_index]]
+
+print("The best combination is: \n")
+print(best_result)
+```
+
+
+### Arima
 
 ```{r echo=FALSE}
-#autofit the sarima model
 arima_autofit <- auto.arima(methane_train_ts[,1], 
                             max.D = 0, 
                             max.P = 0, 
                             max.Q = 0,
                             xreg = methane_train_ts[,5])
-print(arima_autofit)
 
-#get residuals
-#checkresiduals(arima_autofit)
 
-#create the sarima forecast with the autofit
 forecast_arima <- forecast(object = arima_autofit, h = 35,xreg = methane_test_ts[,5])
 
-#calculate accuracy metrics
+
 forecast_arima_accuracy <- accuracy(forecast_arima$mean, methane_test_ts[,1])
 
 print(forecast_arima_accuracy)
 
-#plot the forecast
 plot(forecast_arima)
+```
+
+
+## ARIMA with Fourier
+
+### Choose the best variable combination
+
+```{r}
+
+#variables <- list(c(2),c(2,3),c(2,4),c(2,5),c(2,3,4),c(2,3,5),c(2,4,5),c(2,3,4,5),c(3),c(3,4),c(3,5),c(3,4,5),c(4),c(4,5),c(5))
+
+variables <- list(c(2),c(3),c(4),c(5))
+
+result <- list()
+
+for(variable in variables){
+
+xreg_train <- cbind(fourier(methane_train_msts[,1],K=c(2,6)), methane_train_msts[,variable])
+xreg_test <- cbind(fourier(methane_test_msts[,1],K=c(2,6),h=35), methane_test_msts[,variable])
+
+
+arima_fourier_autofit <- auto.arima(methane_train_msts[,1],
+                                    seasonal=FALSE,
+                                    lambda=0,
+                                    xreg=xreg_train)
+
+
+#create the arima forecast with the autofit
+forecast_arima_fourier <- forecast(object = arima_fourier_autofit,
+                                   xreg= xreg_test)
+  
+#calculate accuracy metrics
+forecast_arima_fourier_accuracy <- accuracy(forecast_arima_fourier$mean, methane_test_msts[,1])
+  
+  
+  #####
+  # Find the best variable
+  #####
+  
+  result_list <- data.frame(Variable_colnum = variable, RMSE = forecast_arima_fourier_accuracy[,"MAPE"])
+  
+  result <- append(result,list(result_list))
+  
+  cat(variable,":\n")
+  
+  print(forecast_arima_fourier_accuracy)
+
+}
+
+rmse_values <- sapply(result, function(x) x$RMSE)
+
+best_index <- which.min(rmse_values)
+
+best_result <- result[[best_index]]
+
+print("The best combination is: \n")
+print(best_result)
+
+```
+### ARIMA with Fourier
+
+```{r echo=FALSE}
+#autofit the arima model
+
+xreg_train <- cbind(fourier(methane_train_msts[,1],K=c(2,6)), methane_train_msts[,2])
+xreg_test <- cbind(fourier(methane_test_msts[,1],K=c(2,6),h=35), methane_test_msts[,2])
+
+
+arima_fourier_autofit <- auto.arima(methane_train_msts[,1],
+                                    seasonal=FALSE,
+                                    lambda=0,
+                                    xreg=xreg_train)
+
+
+#create the arima forecast with the autofit
+forecast_arima_fourier <- forecast(object = arima_fourier_autofit,
+                                   xreg= xreg_test)
+  
+#calculate accuracy metrics
+forecast_arima_fourier_accuracy <- accuracy(forecast_arima_fourier$mean, methane_test_msts[,1])
+
+
+print(forecast_arima_fourier_accuracy)
 ```
 
 
 ## SARIMA
 
+### Choose the best variable combination
+```{r}
+
+#variables <- list(c(2),c(2,3),c(2,4),c(2,5),c(2,3,4),c(2,3,5),c(2,4,5),c(2,3,4,5),c(3),c(3,4),c(3,5),c(3,4,5),c(4),c(4,5),c(5))
+
+variables <- list(c(2),c(3),c(4),c(5))
+result <- list()
+
+for(variable in variables){
+
+sarima_autofit <- auto.arima(methane_train_ts[,1],xreg = methane_train_ts[,variable])
+
+#create the sarima forecast with the autofit
+forecast_sarima <- forecast(object = sarima_autofit, h = 35,xreg = methane_test_ts[,variable])
+
+#calculate accuracy metrics
+forecast_sarima_accuracy <- accuracy(forecast_sarima$mean, methane_test_ts[,1])
+
+
+  result_list <- data.frame(Variable_colnum = variable, RMSE = forecast_sarima_accuracy[,"MAPE"])
+  
+  result <- append(result,list(result_list))
+  
+  cat(variable,":\n")
+  
+  print(forecast_sarima_accuracy)
+  
+}
+
+rmse_values <- sapply(result, function(x) x$RMSE)
+
+best_index <- which.min(rmse_values)
+
+best_result <- result[[best_index]]
+
+print("The best combination is: \n")
+print(best_result)
+
+```
+
+
+### SARIMA
 ```{r echo=FALSE}
 #autofit the sarima model
 sarima_autofit <- auto.arima(methane_train_ts[,1],xreg = methane_train_ts[,5])
-print(sarima_autofit)
-
-#get residuals
-checkresiduals(sarima_autofit)
 
 #create the sarima forecast with the autofit
 forecast_sarima <- forecast(object = sarima_autofit, h = 35,xreg = methane_test_ts[,5])
@@ -187,39 +275,11 @@ forecast_sarima_accuracy <- accuracy(forecast_sarima$mean, methane_test_ts[,1])
 plot(forecast_sarima)
 ```
 
-```{r}
-
-#variables <- list(c(2),c(2,3),c(2,4),c(2,5),c(2,3,4),c(2,3,5),c(2,4,5),c(2,3,4,5),c(3),c(3,4),c(3,5),c(3,4,5),c(4),c(4,5),c(5))
-
-variables <- list(c(2),c(3),c(4),c(5))
-
-for(variable in variables){
-
-sarima_autofit <- auto.arima(methane_train_ts[,1],xreg = methane_train_ts[,variable])
-print(sarima_autofit)
-
-#get residuals
-checkresiduals(sarima_autofit)
-
-#create the sarima forecast with the autofit
-forecast_sarima <- forecast(object = sarima_autofit, h = 35,xreg = methane_test_ts[,variable])
-
-#calculate accuracy metrics
-forecast_sarima_accuracy <- accuracy(forecast_sarima$mean, methane_test_ts[,1])
-
-
-
-  cat(variable,":\n")
-  
-  print(forecast_sarima_accuracy)
-}
-
-
-```
 
 
 ## TBATS 
 
+### Choose the best variable combination
 ```{r}
 
 #variables <- list(c(2),c(2,3),c(2,4),c(2,5),c(2,3,4),c(2,3,5),c(2,4,5),c(2,3,4,5),c(3),c(3,4),c(3,5),c(3,4,5),c(4),c(4,5),c(5))
@@ -261,7 +321,7 @@ best_result <- result[[best_index]]
 print(best_result)
 
 ```
-
+### TBAS
 
 ```{r}
 #fit TBATS
@@ -282,8 +342,75 @@ print(tbats_accuracy)
 
 ```
 
-## STL+arima   (Note: STL only supports arima model for external variables)
 
+## Neuron Network
+
+### Choose the best variable combination
+
+
+```{r}
+
+variables <- list(c(2),c(2,3),c(2,4),c(2,5),c(2,3,4),c(2,3,5),c(2,4,5),c(2,3,4,5),c(3),c(3,4),c(3,5),c(3,4,5),c(4),c(4,5),c(5))
+
+#variables <- list(c(2),c(3),c(4),c(5))
+
+result <- list()
+
+for(variable in variables){
+
+NN_fit <- nnetar(methane_train_ts[,1], xreg = methane_train_ts[,variable], p = 0, P = 7, repeats = 100)
+
+NN_for <- forecast(NN_fit, xreg = methane_test_ts[,variable], h=35)
+
+forecast_NN_accuracy <- accuracy(NN_for$mean, methane_test_ts[,1])
+  
+  
+  #####
+  # Find the best variable
+  #####
+  
+  result_list <- data.frame(
+    Variable_colnum = paste(variable, collapse = ","),
+    MAPE = forecast_NN_accuracy["Test set", "MAPE"]
+  )
+  
+  result <- append(result, list(result_list))
+  
+  cat("Variables:", variable, "\n")
+  print(forecast_NN_accuracy)
+
+}
+
+rmse_values <- sapply(result, function(x) x$MAPE)
+best_index <- which.min(rmse_values)
+best_result <- result[[best_index]]
+
+print("The best combination is: \n")
+print(best_result)
+
+```
+
+### Neural Network
+
+```{r}
+
+NN_fit <- nnetar(methane_train_ts[,1], xreg = methane_train_ts[,c(2,4)], p = 0, P = 7,repeats = 100)
+
+NN_for <- forecast(NN_fit, xreg = methane_test_ts[,c(2,4)], h=35)
+
+forecast_NN_accuracy <- accuracy(NN_for$mean, methane_test_ts[,1])
+
+print(forecast_NN_accuracy)
+
+plot(NN_for)
+
+```
+
+
+## STL+Arima
+Note: STL only supports arima model for external variables
+
+### Choose the best variable combination
 
 ```{r}
 
@@ -298,7 +425,7 @@ for(variable in variables){
 stl_arima_fit <- stlm(methane_train_ts[,1], xreg = methane_train_ts[,variable], s.window = "periodic", method = "arima")
 
 #forecasting test data
-stl_arima_forecast <- forecast(stl_ets_fit, h = length(methane_test_ts), xreg = methane_test_ts[,variable])
+stl_arima_forecast <- forecast(stl_arima_fit, h = length(methane_test_ts), xreg = methane_test_ts[,variable])
 
 #accuracy assessment
 stl_arima_accuracy <- accuracy(stl_arima_forecast$mean, methane_test_ts[,1])
@@ -331,20 +458,17 @@ print(best_result)
 
 ```
 
-
-
-
-
+### STL+Arima
 
 ```{r}
 #fit STL with ETS
 stl_arima_fit <- stlm(methane_train_ts[,1], xreg = methane_train_ts[,2], s.window = "periodic", method = "arima")
 
 #forecasting test data
-stl_arima_forecast <- forecast(stl_ets_fit, h = length(methane_test_ts), xreg = methane_test_ts[,2])
+stl_arima_forecast <- forecast(stl_arima_fit, h = length(methane_test_ts), xreg = methane_test_ts[,2])
 
 #accuracy assessment
-stl_arima_accuracy <- accuracy(stl_ets_forecast$mean, methane_test_ts[,1])
+stl_arima_accuracy <- accuracy(stl_arima_forecast$mean, methane_test_ts[,1])
 
 #visualization
 plot(stl_arima_forecast)
@@ -355,43 +479,44 @@ print(stl_arima_accuracy)
 
 ## State Space
 
+
+### Choose the best variable combination
+
 ```{r}
 
-variables <- list(c(2),c(2,3),c(2,4),c(2,5),c(2,3,4),c(2,3,5),c(2,4,5),c(2,3,4,5),c(3),c(3,4),c(3,5),c(3,4,5),c(4),c(4,5),c(5))
+#variables <- list(c(2),c(2,3),c(2,4),c(2,5),c(2,3,4),c(2,3,5),c(2,4,5),c(2,3,4,5),c(3),c(3,4),c(3,5),c(3,4,5),c(4),c(4,5),c(5))
 
-#variables <- list(c(2),c(3),c(4),c(5))
+variables <- list(c(2),c(3),c(4),c(5))
 
 result <- list()
 
 for(variable in variables){
 
-stl_arima_fit <- stlm(methane_train_ts[,1], xreg = methane_train_ts[,variable], s.window = "periodic", method = "arima")
+SSES <- es(methane_train_ts[,1],model="ZZZ",h=35,holdout=FALSE, xreg = methane_train_ts[,variable])
 
-#forecasting test data
-stl_arima_forecast <- forecast(stl_arima_fit, h = length(methane_test_ts), xreg = methane_test_ts[,variable])
+SSES_for <-forecast(SSES,h=35, interval="prediction", xreg = methane_test_ts[,variable])
 
-#accuracy assessment
-stl_arima_accuracy <- accuracy(stl_arima_forecast$mean, methane_test_ts[,1])
+forecast_SSES_accuracy <- accuracy(SSES$forecast, methane_test_ts[,1])
   
   
   #####
   # Find the best variable
   #####
   
-  result_list <- data.frame(
-    Variable_colnum = paste(variable, collapse = ","),
-    MAPE = stl_arima_accuracy["Variable Col Num", "MAPE"]
-  )
+  result_list <- data.frame(Variable_colnum = variable, RMSE = forecast_SSES_accuracy[,"MAPE"])
   
-  result <- append(result, list(result_list))
+  result <- append(result,list(result_list))
   
-  cat("Variables:", variable, "\n")
-  print(stl_arima_accuracy)
+  cat(variable,":\n")
+  
+  print(forecast_SSES_accuracy)
 
 }
 
-rmse_values <- sapply(result, function(x) x$MAPE)
+rmse_values <- sapply(result, function(x) x$RMSE)
+
 best_index <- which.min(rmse_values)
+
 best_result <- result[[best_index]]
 
 print("The best combination is: \n")
@@ -399,52 +524,49 @@ print(best_result)
 
 ```
 
-
-
-
-
-
-
-
-
+### State Space
 
 ```{r}
 
-SSES <- es(methane_train_ts[,1],model="ZZZ",h=35,holdout=FALSE,xreg=methane_train_ts[,-1])
 
-SSES_for <- forecast(SSES, h = 35, newdata = methane_test_ts[,-1])
+SSES <- es(methane_train_ts[,1],model="ZZZ",h=35,holdout=FALSE, xreg = methane_train_ts[,5])
 
-forecast_SSES_accuracy <- accuracy(SSES_for$mean, methane_test_ts[,1])
+SSES_for <-forecast(SSES,h=35, interval="prediction", xreg = methane_test_ts[,5])
+
+forecast_SSES_accuracy <- accuracy(SSES$forecast, methane_test_ts[,1])
 
 plot(SSES_for)
 
-print(forecast_NN_accuracy)
+print(forecast_SSES_accuracy)
+
+```
+
+
+# Combination of results
+
+```{r}
+
+forecast_arima$mean
+
+forecast_arima_fourier$mean
+
+forecast_sarima$mean
+
+tbats_forecast$mean
+
+NN_for$mean
+
+stl_arima_forecast$mean
+
+stl_arima_forecast
+
+SSES$forecast
 
 ```
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### A template for looping
+# A template for looping
 
 ```{r}
 
@@ -456,20 +578,22 @@ result <- list()
 
 for(variable in variables){
 
-  
+  #####
+  # Your Code
+  #####
   
   
   #####
   # Find the best variable
   #####
   
-  result_list <- data.frame(Variable_colnum = variable, RMSE = tbats_accuracy[,"MAPE"])
+  result_list <- data.frame(Variable_colnum = variable, RMSE = xxxx_accuracy[,"MAPE"])
   
   result <- append(result,list(result_list))
   
   cat(variable,":\n")
   
-  print(tbats_accuracy)
+  print(xxxxx_accuracy)
 
 }
 
@@ -491,20 +615,5 @@ print(best_result)
 
 
 
-
-
-```{r}
-
-SSES <- es(methane_train_ts[,1],model="ZZZ",h=35,holdout=FALSE,xreg=methane_train_ts[,-1])
-
-SSES_for <- forecast(SSES, h = 35, newdata = methane_test_ts[,-1])
-
-forecast_SSES_accuracy <- accuracy(SSES_for$mean, methane_test_ts[,1])
-
-plot(SSES_for)
-
-print(forecast_NN_accuracy)
-
-```
 
 

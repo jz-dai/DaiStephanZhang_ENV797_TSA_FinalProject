@@ -17,7 +17,6 @@ Tasks:
     [ ] General importance of methane concentrations (see first presentation)
         [R] Greenhouse gas & GH Effect (temperature)
         [J] Major contributors (beef production)
-        [ ] 
     
   *Forecast the methane data*
   Due: April 15, 2025
@@ -44,14 +43,14 @@ Tasks:
     [ ] State Space
     
   Forecast the methane data with social predictor:
-    [J] ARIMA
-    [ ] ARIMA with Fourier
-    [J] SARIMA
-    [ ] SARIMA with Fourier
-    [J] Neural Network
-    [J] STL + ETS
-    [J] TBATS
-    [J] State Space
+    [x] ARIMA
+    [x] ARIMA with Fourier
+    [x] SARIMA
+    [x] SARIMA with Fourier
+    [x] Neural Network
+    [x] STL + ETS
+    [x] TBATS
+    [x] State Space
     
   Forecast the methane data with both predictors:
     [ ] ARIMA
