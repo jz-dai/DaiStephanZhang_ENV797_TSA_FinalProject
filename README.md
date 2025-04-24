@@ -24,7 +24,7 @@ The repository contains all raw and wrangled data sets, visualizations, analysis
     [rachael.stephan\@duke.edu](mailto:rachael.stephan@duke.edu),
     contributor
 
--   Zuocheng Zhang, Duke Kunshan University,
+-   Zuocheng Zhang, Duke University Nicholas School of the Environment,
     [zz352\@duke.edu](mailto:zz352@duke.edu),
     contributor
 
