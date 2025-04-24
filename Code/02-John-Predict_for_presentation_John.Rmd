@@ -7,6 +7,24 @@ editor_options:
   chunk_output_type: console
 ---
 
+
+----------
+
+This code contains 1) Data analysis and the figures for the presentation, shown in `# Preparation` chunk. 2) Predictions without using any variables, shown in `# Predictions`
+
+Models contains:
+- Neural Network
+- State Space - smooth
+- State Space - BSM
+
+You may also open the outline of this document, it is more clear for you to get the structure of the code.
+
+----------
+
+
+
+
+
 ```{r chunks, include=FALSE}
 #set up chunk options
 knitr::opts_chunk$set(echo = TRUE,tidy.opts=list(width.cutoff=80), 
@@ -164,7 +182,7 @@ dev.off()
 
 # Predictions
 
-## Neuron Network
+## Neural Network
 
 ```{r}
 
@@ -227,6 +245,9 @@ forecast_SSBSM_accuracy <- accuracy(SSBSM_for$mean,methane_test_ts)
 print(forecast_SSBSM_accuracy)
 
 ```
+
+
+
 
 # Performance Comparison
 

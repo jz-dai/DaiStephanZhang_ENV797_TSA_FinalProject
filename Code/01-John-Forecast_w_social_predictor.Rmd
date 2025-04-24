@@ -6,6 +6,22 @@ output: pdf_document
 ---
 
 
+----------
+
+This code contains the prediction of monthly methane not using social variables.
+
+With each model, it contains two parts:
+
+`### Choose the best variable combination`: A code to find the best social variable combination
+`### Model`: The fitted model using the best variable combination
+
+In the code chunk `# Combination of results`, you can see all the predicted values, you can directly paste them for combination.
+
+You may also open the outline of this document, it is more clear for you to get the structure of the code.
+
+----------
+
+
 ```{r chunks, include=FALSE}
 #set up chunk options
 knitr::opts_chunk$set(echo = TRUE,tidy.opts=list(width.cutoff=80), 
@@ -31,10 +47,9 @@ set.seed(797)
 ```
 
 
-
 # Preparation: Import and split data to training and test sets
 
-```{r include=FALSE}
+```{r }
 # Import social economic factors with methane
 methane_all <- read.csv("../Data/Processed/social_economic_factors_monthly.csv")
 
@@ -115,7 +130,7 @@ print(best_result)
 
 ### Arima
 
-```{r echo=FALSE}
+```{r }
 arima_autofit <- auto.arima(methane_train_ts[,1], 
                             max.D = 0, 
                             max.P = 0, 
@@ -138,7 +153,7 @@ plot(forecast_arima)
 
 ### Choose the best variable combination
 
-```{r}
+```{r echo=FALSE}
 
 #variables <- list(c(2),c(2,3),c(2,4),c(2,5),c(2,3,4),c(2,3,5),c(2,4,5),c(2,3,4,5),c(3),c(3,4),c(3,5),c(3,4,5),c(4),c(4,5),c(5))
 
@@ -192,7 +207,7 @@ print(best_result)
 ```
 ### ARIMA with Fourier
 
-```{r echo=FALSE}
+```{r}
 #autofit the arima model
 
 xreg_train <- cbind(fourier(methane_train_msts[,1],K=c(2,6)), methane_train_msts[,2])
@@ -220,7 +235,7 @@ print(forecast_arima_fourier_accuracy)
 ## SARIMA
 
 ### Choose the best variable combination
-```{r}
+```{r echo=FALSE}
 
 #variables <- list(c(2),c(2,3),c(2,4),c(2,5),c(2,3,4),c(2,3,5),c(2,4,5),c(2,3,4,5),c(3),c(3,4),c(3,5),c(3,4,5),c(4),c(4,5),c(5))
 
@@ -261,7 +276,7 @@ print(best_result)
 
 
 ### SARIMA
-```{r echo=FALSE}
+```{r}
 #autofit the sarima model
 sarima_autofit <- auto.arima(methane_train_ts[,1],xreg = methane_train_ts[,5])
 
@@ -280,7 +295,7 @@ plot(forecast_sarima)
 ## TBATS 
 
 ### Choose the best variable combination
-```{r}
+```{r echo=FALSE}
 
 #variables <- list(c(2),c(2,3),c(2,4),c(2,5),c(2,3,4),c(2,3,5),c(2,4,5),c(2,3,4,5),c(3),c(3,4),c(3,5),c(3,4,5),c(4),c(4,5),c(5))
 
@@ -348,7 +363,7 @@ print(tbats_accuracy)
 ### Choose the best variable combination
 
 
-```{r}
+```{r echo=FALSE}
 
 variables <- list(c(2),c(2,3),c(2,4),c(2,5),c(2,3,4),c(2,3,5),c(2,4,5),c(2,3,4,5),c(3),c(3,4),c(3,5),c(3,4,5),c(4),c(4,5),c(5))
 
@@ -412,7 +427,7 @@ Note: STL only supports arima model for external variables
 
 ### Choose the best variable combination
 
-```{r}
+```{r echo=FALSE}
 
 #variables <- list(c(2),c(2,3),c(2,4),c(2,5),c(2,3,4),c(2,3,5),c(2,4,5),c(2,3,4,5),c(3),c(3,4),c(3,5),c(3,4,5),c(4),c(4,5),c(5))
 
@@ -482,7 +497,7 @@ print(stl_arima_accuracy)
 
 ### Choose the best variable combination
 
-```{r}
+```{r echo=FALSE}
 
 #variables <- list(c(2),c(2,3),c(2,4),c(2,5),c(2,3,4),c(2,3,5),c(2,4,5),c(2,3,4,5),c(3),c(3,4),c(3,5),c(3,4,5),c(4),c(4,5),c(5))
 
@@ -544,7 +559,7 @@ print(forecast_SSES_accuracy)
 
 # Combination of results
 
-```{r}
+```{r echo=FALSE}
 
 forecast_arima$mean
 
@@ -568,7 +583,7 @@ SSES$forecast
 
 # A template for looping
 
-```{r}
+```{r echo=FALSE}
 
 variables <- list(c(2),c(2,3),c(2,4),c(2,5),c(2,3,4),c(2,3,5),c(2,4,5),c(2,3,4,5),c(3),c(3,4),c(3,5),c(3,4,5),c(4),c(4,5),c(5))
 
