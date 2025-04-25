@@ -113,6 +113,14 @@ tempanom_test_msts <- msts(tempanom_test$temp_anomaly,
                             start=c(2022,1))
 ```
 
+## Deseason the Data
+
+```{r}
+decomposed <- decompose(tempanom_train_ts, type = "additive")
+tempanom_deseasoned <- tempanom_train_ts - decomposed$seasonal
+```
+
+
 ## ACF and PACF
 
 ```{r echo=FALSE, warning=FALSE}
@@ -382,60 +390,23 @@ kable(forecast_performance[,1:5],
       digits = 3)
 ```
 
-# Plot
+# Best Model
 
-```{r}
-# Convert predictions to a ts object
-rf_ts <- ts(forecast_rf, start = start(tempanom_test_ts), frequency = frequency(tempanom_test_ts))
+```{r echo=FALSE}
+#autofit arimax
+arimax_fit2 <- auto.arima(tempanom_all_ts,
+                         xreg = methane_all_ts)
 
-# Plot properly
-autoplot(tempanom_train_ts) +
-  geom_line(data = tempanom_test_ts, colour = "grey40") +
-  autolayer(forecast_nnetar, PI = FALSE, series = "NNETAR") +
-  autolayer(forecast_arimax, PI = FALSE, series = "ARIMAX") +
-  autolayer(rf_ts, series = "Random Forest", size = 1, color = "firebrick") +
-  labs(x = "Time",
-       y = "Temperature Anomaly (*C)",
-       title = "Temperature Anomaly over Time") +
-  guides(colour = guide_legend(title = "Forecast")) +
-  xlim(c(2010, 2025)) +
-  ylim(c(0.4, 1.5))
+#create forecast
+forecast_arimax2 <- forecast(arimax_fit2, 
+                            xreg = tail(methane_all_ts, 12*3), 
+                            h = 12*3)
 
-
+#write to csv
+write.csv(forecast_arimax2$mean, 
+         file = "./Forecasts/temperature_future.csv",
+         row.names = FALSE)
 ```
-
-# Averaging
-## Averaged Models
-
-Averaging every combination of the models will result in 
-
-```{r}
-#create a dataframe of all of the forecasts
-forecasts <- data.frame(
-  "arimax" = forecast_arimax$mean,
-  "NNETAR" = forecast_nnetar$mean,
-  )
-
-# Get column names
-col_names <- names(forecasts)
-
-# Initialize empty list to hold averaged columns
-avg_forecasts <- list()
-
-# Loop over sizes of combinations (from 2 to 9 models)
-for (r in 2:length(col_names)) {
-  combos <- combn(col_names, r, simplify = FALSE)
-  
-  for (combo in combos) {
-    combo_name <- paste(combo, collapse = "_")
-    avg_forecasts[[combo_name]] <- rowMeans(forecasts[, combo, drop = FALSE])
-  }
-}
-
-# Convert to a data frame
-avg_forecasts_df <- as.data.frame(avg_forecasts)
-```
-
 
 # Notes
 Models to check out:

@@ -9,14 +9,14 @@ editor_options:
 ---
 ```{r message=FALSE, warning=FALSE, include=FALSE}
 #retrieve libraries
-library(here)
-library(ggplot2)
 library(forecast)
 library(cowplot)
 library(Kendall)
 library(tseries)
 library(lubridate)
 library(knitr)
+library(corrplot)
+library(tidyverse)
 ```
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
@@ -54,7 +54,7 @@ The following data sources were used in this analysis and their respective wrang
   - Frequency: monthly
   - Units: ppb
   - Format: csv file
-  - Source: [NOAA Global Monitoring Laboratory](https://gml.noaa.gov/ccgg/trends_ch4/)
+  - Source: \href{https://gml.noaa.gov/ccgg/trends_ch4/}{\textcolor{blue}{NOAA Global Monitoring Laboratory}}
   
 The initial methane data set was an excel `.csv` file with columns of the year, month, decimal year, average methane concentration, average uncertainty, trend value, and trend uncertainty on a single sheet. It was processed as follows:
 
@@ -64,14 +64,11 @@ The initial methane data set was an excel `.csv` file with columns of the year, 
 -   Data set was verified for missing data - none were present. 
 -   Data frames were saved as the full data, training period data, and test period data. The training and testing periods are expanded upon in the methods section.
 
-
-  
 2. *Globally averaged temperature anomaly data (based on a 1901-2000 average)*
   - Frequency: monthly
   - Units: degrees Celsius
   - Format: csv file
-  - Source: [NOAA National Center for Environmental Information
-](https://www.ncei.noaa.gov/access/monitoring/climate-at-a-glance/global/time-series)
+  - Source: \href{https://www.ncei.noaa.gov/access/monitoring/climate-at-a-glance/global/time-series}{\textcolor{blue}{NOAA National Center for Environmental Information}}
 
 The initial temperature anomaly data set was an excel `.csv` file with columns of the date and temperature anomaly on a single sheet. It was processed as follows:
 
@@ -81,26 +78,22 @@ The initial temperature anomaly data set was an excel `.csv` file with columns o
 -   Data set was verified for missing data - none were present. 
 -   Data frames were saved as the full data, training period data, and test period data. The training and testing periods are expanded upon in the methods section.
 
-
-
 3. *Aggregated global beef production*
   - Frequency: yearly
   - Units: metric tons
   - Format: csv file
-  - Source: [U.S. Department of Agriculture]()
+  - Source: \href{**INSERT LINK HERE**}{\textcolor{blue}{U.S. Department of Agriculture}}
 
   
 4. *Socioeconomic factors data set including consumer price index (CPI), industrial production, merchandise exports, and merchandise imports.*
   - Frequency: monthly
   - Units: index (2005=100)
   - Format: csv file
-  - Source [Federal Reserve Bank of Dallas]()
-
-
+  - Source \href{**INSERT LINK HERE**}{\textcolor{blue}{Federal Reserve Bank of Dallas}}
 
 ## Data Summary
 
-The data frames were not combined for analysis, but the relevant factors have been merged into a data frame for summary purposes below. All of the monthly data is shown in a single data frame and yearly data (i.e., beef production) is shown in another data frame)
+The data frames were not combined for analysis, but the relevant factors have been merged into a data frame for summary purposes below (Table 1). All of the monthly data is shown in a single data frame (Table 2) and yearly data (i.e., beef production) is shown in another data frame (Table 3).
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 methane <- read.csv("./Data/Processed/methane_all.csv")
@@ -119,15 +112,6 @@ all_data_df <- data.frame("Date" = methane$date,
 
 beef_df <- data.frame(Year = beef$Year,
                       "Beef Production" = beef$Beef_Production.Tons.)
-
-#create kable
-kable(head(all_data_df, 10),
-      col.names = colnames(all_data_df),
-      caption = "First 10 cases of global methane (ppb), temperature anomaly (degrees celsius), and socioeconomic indicators")
-
-kable(head(beef_df, 10),
-      col.names = colnames(beef_df),
-      caption = "First 10 cases of beef production (metric tons)")
 
 # Get the summary
 ## empty df
@@ -157,6 +141,7 @@ for (i in 2:length(all_data_df)) {
   summary_df[i-1,] <- c(vari, leni, meani, stdevi, mini, maxi, pct25i, pct75i)
 }
 
+## add beef data
 summary_df <- rbind(summary_df,
                     c("Beef Production",
                       length(beef_df$Beef.Production),
@@ -167,14 +152,51 @@ summary_df <- rbind(summary_df,
                       quantile(beef_df$Beef.Production, probs = .25),
                       quantile(beef_df$Beef.Production, probs = .75)))
 
+## add units
+summary_df$Units <- c("ppb", "degrees Celsius", rep("index (2005=100)",4), "metric tons")
+
+summary_df <- summary_df %>%
+  relocate(Units, .after = Variable)
+
 #create kable
 kable(summary_df,
       digits = 5,
       col.names = colnames(summary_df),
       caption = "Summary statistics for all of the variables used in the analysis from July 1, 1983 to November 1, 2024, Beef Production is provided until 2023.")
+
+kable(head(all_data_df, 10),
+      col.names = colnames(all_data_df),
+      caption = "First 10 cases of global methane (ppb), temperature anomaly (degrees celsius), and socioeconomic indicators")
+
+kable(head(beef_df, 10),
+      col.names = colnames(beef_df),
+      caption = "First 10 cases of beef production (metric tons)")
+```
+
+All of the identified variables have a relatively strong correlation with each other (Fig. 1). The highest correlation between exogenous variables and methane is CPI with 0.97. The correlation between temperature and methane is 0.87.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap= "Correlation Between All Monthly Variables"}
+corrplot(cor(all_data_df[, sapply(all_data_df, is.numeric)]),
+         tl.col = "black",
+         method = "color",
+         addCoef.col = "white",
+         type = "lower",
+         tl.srt = 30)
 ```
 
 # Analysis
+
+## Libraries
+
+The following libraries were used in the analysis:
+
+-   `tidyverse`: a collection of R packages with similar grammar data structures used to tidy and process data, including `ggplot2` and `lubridate` which are for graphing and handling dates respectively.
+-   `forecast`: methods and tools used to produce and analyze univariate time series forecasts
+-   `cowplot`: an addition to `ggplot2` used to align figures
+-   `Kendall`: contains the Kendall and Mann-Kendall statistical methods
+-   `tseries`: tools for time series analysis and computational finance
+-   `corrplot`: a visual exploratory tool for plotting correlation matrices
+-   `smooth`: tools for state space modelling
 
 ## Training and Test Periods
 
@@ -182,15 +204,48 @@ The training period was designated as July 1, 1983 to December 1, 2021. The test
 
 ## Methane Concentration Predictions
 
-**GENERAL DESCRIPTION OF EACH METHANE DATA SET WITH GENERAL GRAPH**
+The methane data has an increasing trend with a seasonal component (Fig. 2). 
 
-The methane and temperature time series were decomposed into the component parts with the `decompose` function. The ACF and PACF were also examined. **EXPLAIN ACF AND PACF PLOT**
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Globally Averaged Methane Concentrations From July 1, 1983 -\nNovember 1, 2024"}
+methane_train <- read.csv("./Data/Processed/methane_training.csv")
 
-**ACF AND PACF PLOT**
+ggplot(data = methane_train, aes(x = as.Date(date), y = average))+
+  geom_line()+
+  labs(x = "Date",
+       y = "Methane Concentration (ppb)")
+```
+
+Decomposing the methane time series confirms a positive trend with a seasonal component (Fig. 3). The random component is relatively evenly distributed, but there may be some seasonality or other periodic component remaining because the peaks and troughs appear to be fairly regular. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="The components of the methane time series"}
+methane_train_ts <- ts(methane_train$average, 
+                        start = c(1983,7),
+                        frequency = 12)
+
+decomp <- decompose(methane_train_ts)
+
+plot(decomp)
+```
+
+The ACF plot shows a gradual decay and the PACF plot shows a sharp drop off after lag 1 (Fig. 4). This indicates temperature may have an auto-regressive component to the methane time series. The seasonality is not strongly visible in the ACF plot. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="The autocorrelation and partial autocorrelation plots of the methane time series"}
+#check acf and pacf
+ACF_Plot <- autoplot(Acf(methane_train_ts, lag=40, plot = FALSE), 
+                     ylim=c(-0.5,1), 
+                     main="Methane ACF")
+PACF_Plot <- autoplot(Pacf(methane_train_ts, lag=40, plot = FALSE), 
+                      ylim=c(-0.5,1), 
+                      main="Methane PACF")
+#plot
+plot_grid(ACF_Plot, PACF_Plot)
+```
+
+**ADD IN STATIONARITY TESTS AND INTERPRET THEIR RESULTS**
 
 The following models were used to predict methane concentrations without the use of exogenous variables.
 
-1.    ARIMA using `auto.arima` and decomposed seasonality
+1.    ARIMA using `auto.arima` and adding the decomposed seasonality (from `decompose`) afterwards
 2.    SARIMA using `auto.arima` with Fourier terms
 3.    ARIMA with Fourier terms with `auto.arima` function
 4.    ETS Model with the `stlf` function
@@ -201,39 +256,82 @@ The following models were used to predict methane concentrations without the use
 
 The following models were used to predict methane concentrations with the use of exogenous variables (i.e., using the `xreg` term).
 
-1.    
+1.    **INSERT HERE WITH SAME FORMAT AS ABOVE**
 
-All of the above models were averaged together in every possible combination.
+All of the above models were averaged together in every possible combination. The performance of all of the models were examined with the `accuracy` function and the methane test data subset. All of the best performing models were an average of multiple models both involving and not involving exogenous variables. All of these forecasts closely follow the trend in methane (Fig. 5). **Expand a little more** 
 
-The performance of all of the models were examined with the `accuracy` function and the methane test data subset. The performance metrics for the top 10 models are shown below. 
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+methane_accuracy <- read.csv("./Forecasts/methane_accuracy.csv")%>%
+  rename(Rank = X) %>%
+  select(Rank, Model, MAPE)
+
+kable(methane_accuracy,
+      caption = "The top five methane concentration models and their performance statistics sorted by MAPE.")
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="The top five performing methane concentration forecast models. Models are numbered by their performance by MAPE and the full title can be found in Table 4"}
+#upload relevant forecasts
+model1 <- read.csv("./Forecasts/Methane_Averages/ets_nn_nnExoSE_nnFourier_sses_ssesExoSE.csv")
+model2 <- read.csv("./Forecasts/Methane_Averages/arimaFourier_nn_nnExoSE_nnFourier_sses_ssesExoSE_stlArimaExoSE.csv")
+model3 <- read.csv("./Forecasts/Methane_Averages/arimaFourier_ets_nn_nnExoSE_nnFourier_sarimaExoSE_sses_ssesExoSE.csv")
+model4 <- read.csv("./Forecasts/Methane_Averages/ets_nn_nnExoSE_nnFourier_sses_ssesExoSE_stlArimaExoSE.csv")
+model5 <- read.csv("./Forecasts/Methane_Averages/arimaFourier_nn_nnExoSE_nnFourier_sses_ssesExoSE.csv")
+
+methane_test <- read.csv("./Data/Processed/methane_test.csv")
+methane_graph <- read.csv("./Data/Processed/methane_all.csv") %>%
+  tail(60)
+
+models_df <- data.frame("date" = as.Date(methane_test$date),
+                        "Model 1" = model1$x,
+                        "Model 2" = model2$x,
+                        "Model 3" = model3$x,
+                        "Model 4" = model4$x,
+                        "Model 5" = model5$x) %>%
+  pivot_longer(cols = -date, names_to = "Method", values_to = "load")
+
+
+
+ggplot(data = methane_graph, aes(x = as.Date(date), y = average)) +
+  geom_line(color = "black") +
+  geom_line(data = models_df, aes(x = date, y = load, color = Method)) +
+  labs(y = "Methane Concentration (ppb)",
+       x = "Date",
+       title = "Top Performing Methane Forecast Models",
+       color = "Forecast Model")+
+  scale_x_date(date_labels = "%b %Y") 
+```
 
 **TALK ABOUT TOP 3 MODELS AND LOOK AT THEIR RESIDUALS**
 
+**IDENTIFY BEST FORECAST**
+
 ## Temperature Anomaly Predictions
 
-The temperature anomaly data has a general increasing trend. There is a annual seasonal trend but it is smaller than the random errors and not easily visible. However, it does have a similar shape to the methane seasonality. The remainders do not appear to have any trends and there are few outliers. 
+Temperature anomaly data was examined using the `decompose` function (Fig. 6 and 7). The temperature anomaly data has a general increasing trend. There is a annual seasonal trend but it is smaller than the random errors and not easily visible. However, it does have a similar shape to the methane seasonality. The remainders do not appear to have any trends and there are few outliers. 
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="The globally Averaged Temperature Anomaly over the Training Period"}
+#read in training data
 tempanom_train <- read.csv("./Data/Processed/tempanom_training.csv")
 
+#plot training data
 ggplot(data = tempanom, aes(x = as.Date(date), y = temp_anomaly))+
   geom_line()+
   labs(x = "Date",
-       y = "Temperature Anomaly (*C)",
-       title = "Globally Averaged Temperature Anomaly over the Training Period")
+       y = "Temperature Anomaly (*C)")
 
 tempanom_train_ts <- ts(tempanom_train$temp_anomaly, 
                         start = c(1983,7),
                         frequency = 12)
-
+```
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="The components of the temperature time series"}
+#graph the series components
 decomp <- decompose(tempanom_train_ts)
 
 plot(decomp)
 ```
 
-The ACF plot shows a gradual decay and the PACF plot shows a sharp drop off after lag 2. This indicates temperature may have an auto-regressive component to the model. There does appear to be a slight seasonal scalloping in the ACF plot. 
+The ACF plot shows a gradual decay and the PACF plot shows a sharp drop off after lag 2 (Fig. 8). This indicates temperature may have an auto-regressive component to the model. There does appear to be a slight seasonal scalloping in the ACF plot. 
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="The autocorrelation and partial autocorrelation plots of the temperature time series"}
 ACF_Plot <- autoplot(Acf(tempanom_train_ts, lag=40, plot = FALSE), 
                      ylim=c(-0.5,1), 
                      main="ACF plot")
@@ -244,6 +342,8 @@ PACF_Plot <- autoplot(Pacf(tempanom_train_ts, lag=40, plot = FALSE),
 #create plot grid
 plot_grid(ACF_Plot, PACF_Plot)
 ```
+
+**ADD IN STATIONARITY TESTS AND INTERPRET THEIR RESULTS IF TIME**
 
 The following models were used to predict methane concentrations without the use of exogenous variables.
 
@@ -257,22 +357,67 @@ The following models were used to predict methane concentrations with the use of
 3.    Neural Network
 4.    Random Forest
 
-All of the above models were averaged together in every possible combination.
-
-The performance of all of the models were examined with the `accuracy` function and the methane test data subset. The performance metrics for the top 5 models are shown below.
+All of the above models were averaged together in every possible combination. The performance of all of the models were examined with the `accuracy` function and the methane test data subset. The best performing model was the SARIMAX model. However, the MAPE was much higher than in our methane forecasts (Table 5), and the forecast does not accurately reflect the most recent upwards trends in temperature (Fig. 9). The temperature trended upwards for most of the data record, but recently that trend stabilized. Therefore, the models are likely biased towards recent events and did not capture the shift back to an upwards trend.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-tempanom_accuracy <- read.csv("./Forecasts/temperature_accuracy.csv")
+tempanom_accuracy <- read.csv("./Forecasts/temperature_accuracy.csv") %>%
+  rename(Rank = X)
 
 kable(tempanom_accuracy,
       caption = "The top five temperature anomaly models and their performance statistics sorted by MAPE.")
 ```
 
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="The top five performing methane concentration forecast models. Models are numbered by their performance by MAPE and the full title can be found in Table 5"}
+#upload relevant forecasts
+model1 <- read.csv("./Forecasts/Temperature/sarimax.csv")
+model2 <- read.csv("./Forecasts/Temperature_Averages/rfExo_sarimax.csv")
+model3 <- read.csv("./Forecasts/Temperature_Averages/arimaFourier_sarimax.csv")
+model4 <- read.csv("./Forecasts/Temperature_Averages/arimaxFourier_sarimax.csv")
+model5 <- read.csv("./Forecasts/Temperature_Averages/sarima_sarimax.csv")
+
+tempanom_test <- read.csv("./Data/Processed/tempanom_test.csv")
+tempanom_graph <- read.csv("./Data/Processed/tempanom_all.csv") %>%
+  tail(100)
+
+models_df <- data.frame("date" = as.Date(tempanom_test$date),
+                        "Model 1" = model1$x,
+                        "Model 2" = model2$x,
+                        "Model 3" = model3$x,
+                        "Model 4" = model4$x,
+                        "Model 5" = model5$x) %>%
+  pivot_longer(cols = -date, names_to = "Method", values_to = "load")
 
 
-Based on this analysis the _________________ model performs the best. We used this model to predict temperature for 3 years into the future, using the whole data set as a training data set and assuming that the current climate scenario does not drastically change. **DOES RACHAEL USE EXOGENOUS VARIABLES OR NOT WILL DEPEND ON UPLOADED CODE**
 
-**INPUT CODE FOR THAT HERE**
+ggplot(data = tempanom_graph, aes(x = as.Date(date), y = temp_anomaly)) +
+  geom_line(color = "black") +
+  geom_line(data = models_df, aes(x = date, y = load, color = Method)) +
+  labs(y = "Methane Concentration (ppb)",
+       x = "Date",
+       color = "Forecast Model")+
+  scale_x_date(date_labels = "%b %Y") 
+```
+
+
+We used the SARIMAX model to predict temperature for 3 years into the future, using the whole data set as a training data set and assuming that the current climate scenario does not drastically change (Fig. 10). The future project appears to be strongly dominated by the seasonality of methane concentrations with a bias for the stable trend over the past couple of years. It does not seem likely that this forecast will accurately reflect the future temperatures. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Future temperature forecasts based on the sarimax model with exogenous variable of methane."}
+tempanom_future <- read.csv("./Forecasts/temperature_future.csv") %>%
+  rename(tempanom = x) %>%
+  mutate("date" = seq(max(as.Date(tempanom_graph$date)), 
+                      by = "month", 
+                      length.out = 12*3))
+
+ggplot(data = tempanom_graph, aes(x = as.Date(date), y = temp_anomaly)) +
+  geom_line(color = "black") +
+  geom_line(data = tempanom_future, aes(x = date, y = tempanom), colour = "red") +
+  labs(y = "Methane Concentration (ppb)",
+       x = "Date",
+       title = "Temperature Forecasts into the Future",
+       color = "Forecast Model")+
+  scale_x_date(date_labels = "%b %Y") 
+```
+
  
 # Conclusions
 

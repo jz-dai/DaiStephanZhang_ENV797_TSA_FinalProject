@@ -190,6 +190,11 @@ forecast_arima_accuracy <- accuracy(forecast_arima, methane_test_ts)
 
 #plot the forecast
 autoplot(forecast_arima)
+
+#write to csv
+write.csv(forecast_arima,
+          "./Forecasts/Methane/arima.csv",
+          row.names = FALSE)
 ```
 
 The ARIMA auto-fit was: ARIMA(5,2,4).
@@ -214,6 +219,11 @@ forecast_sarima_accuracy <- accuracy(forecast_sarima$mean, methane_test_ts)
 
 #plot the forecast
 plot(forecast_sarima)
+
+#write to csv
+write.csv(forecast_sarima$mean,
+          "./Forecasts/Methane/sarima.csv",
+          row.names = FALSE)
 ```
 
 The SARIMA auto-fit was: ARIMA(2,1,2)(1,1,1)[12].
@@ -246,6 +256,11 @@ forecast_arima_fourier_accuracy <- accuracy(forecast_arima_fourier$mean, methane
 
 #plot the forecast
 plot(forecast_arima_fourier)
+
+#write to csv
+write.csv(forecast_arima_fourier$mean,
+          "./Forecasts/Methane/arimaFourier.csv",
+          row.names = FALSE)
 ```
 
 ##STL+ETS
@@ -263,6 +278,11 @@ stl_ets_accuracy <- accuracy(stl_ets_forecast$mean, methane_test_ts)
 
 #visualization
 plot(stl_ets_forecast)
+
+#write to csv
+write.csv(stl_ets_forecast$mean,
+          "./Forecasts/Methane/ets.csv",
+          row.names = FALSE)
 ```
 
 ##TBATS
@@ -281,81 +301,112 @@ tbats_accuracy <- accuracy(tbats_forecast$mean, methane_test_ts)
 
 #visualization
 plot(tbats_forecast)
+
+#write to csv
+write.csv(tbats_forecast$mean,
+          "./Forecasts/Methane/tbats.csv",
+          row.names = FALSE)
 ```
 
 ## Neuron Network
 
 ```{r}
-
+#create fit
 NN_fit <- nnetar(methane_train_ts, p = 1, P = 7)
 
+#get forecast
 NN_for <- forecast(NN_fit, h = length(methane_test_ts))
 
+#determine accuracy
 forecast_NN_accuracy <- accuracy(NN_for$mean, methane_test_ts)
 
+#examine results
 print(forecast_NN_accuracy)
 
 plot(NN_for)
 
+#write to csv
+write.csv(NN_for$mean,
+          "./Forecasts/Methane/nn.csv",
+          row.names = FALSE)
 ```
 
 ```{r}
-
+#fit
 NN_fourier_fit <- nnetar(methane_train_msts, p = 0, P = 7,
                  xreg=fourier(methane_train_msts,K=c(2,6)))
 
+#forecast
 NN_fourier_for <- forecast(NN_fourier_fit, h=length(methane_test_ts), xreg=fourier(methane_train_msts,K=c(2,6), h=length(methane_test_ts)))
 
+#accuracy
 forecast_NN_fourier_accuracy <- accuracy(NN_fourier_for$mean, methane_test_msts)
 
+#examine results
 print(forecast_NN_fourier_accuracy)
 
 plot(NN_fourier_for)
 
+#write to csv
+write.csv(NN_fourier_for$mean,
+          "./Forecasts/Methane/nnFourier.csv",
+          row.names = FALSE)
 ```
 
 ## State Space - Smooth
 
 ```{r}
-
+#fit
 SSES <- es(methane_train_ts,
            model="ZZZ",
            h=length(methane_test_ts),
            holdout=FALSE)
 
+#forecast
 SSES_for <-forecast(SSES,
                     h = length(methane_test_ts), 
                     interval="prediction")
 
+#examine results
 plot(SSES_for)
 
 forecast_SSES_accuracy <- accuracy(SSES$forecast, methane_test_ts)
 
 print(forecast_SSES_accuracy)
 
+#write to csv
+write.csv(SSES_for$mean,
+          "./Forecasts/Methane/sses.csv",
+          row.names = FALSE)
 ```
 
 ## State Space - BSM
 
 ```{r}
-
+#fit
 SSBSM <- StructTS(methane_train_ts,
                     type="BSM",fixed=c(NA,NA,NA,NA))
 
+#forecast
 SSBSM_for <- forecast(SSBSM,h=length(methane_test_ts))
 
+#examine results
 plot(SSBSM_for)
 
 forecast_SSBSM_accuracy <- accuracy(SSBSM_for$mean,methane_test_ts)
 
 print(forecast_SSBSM_accuracy)
 
+#write to csv
+write.csv(SSBSM_for$mean,
+          "./Forecasts/Methane/ssbsm.csv",
+          row.names = FALSE)
 ```
 
 
 # Performance Comparison
 
-```{r echo=FALSE}
+```{r eval=FALSE}
 # Combine performance vectors as rows
 forecast_performance <- data.frame(rbind(forecast_arima_accuracy, 
                                          forecast_sarima_accuracy,
@@ -379,7 +430,7 @@ rownames(forecast_performance) <- c("ARIMA",
                                     "State Space w/ BSM")
 ```
 
-```{r echo=FALSE}
+```{r eval=FALSE}
 kable(forecast_performance[,1:6], 
       caption = "Forecast Accuracy",
       digits = 3)
@@ -390,7 +441,7 @@ kable(forecast_performance[,1:6],
 
 Averaging every combination of the models will result in 
 
-```{r}
+```{r eval=FALSE}
 #create a dataframe of all of the forecasts
 forecasts <- data.frame(
   "arima" = forecast_arima$mean,
@@ -425,7 +476,7 @@ avg_forecasts_df <- as.data.frame(avg_forecasts)
 
 Get the performance of each combination and save the top 10 to a separate dataframe
 
-```{r}
+```{r eval=FALSE}
 avg_forecasts_accuracy <- data.frame(matrix(ncol = 7, nrow = 0))
 
 #provide column names
@@ -449,7 +500,7 @@ avg_forecasts_accuracy_best <- avg_forecasts_accuracy %>%
 
 # All Forecasts Plot
 
-```{r}
+```{r eval=FALSE}
 autoplot(methane_all_ts) +
   autolayer(stl_ets_forecast, PI=FALSE, series="STL+ETS", alpha = 0.75) +
   autolayer(forecast_arima, PI=FALSE, series="ARIMA", alpha = 0.75) +

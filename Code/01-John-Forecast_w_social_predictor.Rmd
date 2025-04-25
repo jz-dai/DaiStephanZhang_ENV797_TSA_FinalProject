@@ -51,7 +51,7 @@ set.seed(797)
 
 ```{r }
 # Import social economic factors with methane
-methane_all <- read.csv("../Data/Processed/social_economic_factors_monthly.csv")
+methane_all <- read.csv("./Data/Processed/social_economic_factors_monthly.csv")
 
 
 # Transform to time series
@@ -146,6 +146,11 @@ forecast_arima_accuracy <- accuracy(forecast_arima$mean, methane_test_ts[,1])
 print(forecast_arima_accuracy)
 
 plot(forecast_arima)
+
+#write to csv
+write.csv(forecast_arima$mean,
+          "./Forecasts/Methane/arimaExoSE.csv",
+          row.names = FALSE)
 ```
 
 
@@ -229,6 +234,11 @@ forecast_arima_fourier_accuracy <- accuracy(forecast_arima_fourier$mean, methane
 
 
 print(forecast_arima_fourier_accuracy)
+
+#write to csv
+write.csv(forecast_arima_fourier$mean,
+          "./Forecasts/Methane/arimaFourierExoSE.csv",
+          row.names = FALSE)
 ```
 
 
@@ -288,6 +298,11 @@ forecast_sarima_accuracy <- accuracy(forecast_sarima$mean, methane_test_ts[,1])
 
 #plot the forecast
 plot(forecast_sarima)
+
+#write to csv
+write.csv(forecast_sarima$mean,
+          "./Forecasts/Methane/sarimaExoSE.csv",
+          row.names = FALSE)
 ```
 
 
@@ -353,7 +368,10 @@ plot(tbats_forecast)
 
 print(tbats_accuracy)
 
-
+#write to csv
+write.csv(tbats_forecast$mean,
+          "./Forecasts/Methane/tbatsExoSE.csv",
+          row.names = FALSE)
 
 ```
 
@@ -419,6 +437,10 @@ print(forecast_NN_accuracy)
 
 plot(NN_for)
 
+#write to csv
+write.csv(NN_for$mean,
+          "./Forecasts/Methane/nnExoSE.csv",
+          row.names = FALSE)
 ```
 
 
@@ -490,6 +512,10 @@ plot(stl_arima_forecast)
 
 print(stl_arima_accuracy)
 
+#write to csv
+write.csv(stl_arima_forecast$mean,
+          "./Forecasts/Methane/stlArimaExoSE.csv",
+          row.names = FALSE)
 ```
 
 ## State Space
@@ -553,6 +579,11 @@ forecast_SSES_accuracy <- accuracy(SSES$forecast, methane_test_ts[,1])
 plot(SSES_for)
 
 print(forecast_SSES_accuracy)
+
+#write to csv
+write.csv(SSES_for$mean,
+          "./Forecasts/Methane/ssesExoSE.csv",
+          row.names = FALSE)
 
 ```
 

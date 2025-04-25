@@ -34,14 +34,14 @@ theme_set(mytheme)
 
 ```{r}
 #import data
-beef_production <- read.csv("../Data/Raw/beef_buffalo_production.csv", skip = 23,
+beef_production <- read.csv("./Data/Raw/beef_buffalo_production.csv", skip = 23,
                             header = FALSE)
 
 #set column names
 colnames(beef_production) <- c("Entity", "Code", "Year", "Beef_Production(Tons)")
 
 write.csv(beef_production, 
-          file = "../Data/Processed/beef_production.csv",
+          file = "./Data/Processed/beef_production.csv",
           row.names=FALSE)
 ```
 
@@ -60,7 +60,7 @@ autoplot(beef_ts)+
 ```
 
 ```{r}
-methane <- read.csv("../Data/Processed/methane_all.csv")
+methane <- read.csv("./Data/Processed/methane_all.csv")
 methane_yearly <- methane %>% 
   filter(year < 2024) %>% 
   group_by(year) %>% 
@@ -107,6 +107,8 @@ autoplot(forecast_arimax) +
        y = "Methane Emissions",
        x = "Year") +
   guides(colour = guide_legend(title = "Legend"))
+
+
 
 ```
 

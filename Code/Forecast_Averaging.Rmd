@@ -17,7 +17,7 @@ library(tidyverse)
 library(tibble)
 ```
 
-# Methane
+# Temperature
 ## Upload Previous Models
 ```{r}
 #upload files
@@ -96,4 +96,120 @@ forecast_save <- rownames_to_column(avg_forecasts_accuracy_best, var = "Model")
 write.csv(forecast_save, 
          file = here("Forecasts/temperature_accuracy.csv"),
          row.names = TRUE)
+
+#save averaged forecasts
+#grab names of all averaged forecasts
+avg_names <- forecast_save$Model
+
+#export averaged forecasts
+for (i in seq_along(avg_names)) {
+  filepath <- paste0("Forecasts/Temperature_Averages/", avg_names[i], ".csv")
+  
+  df <- avg_forecasts_df[[avg_names[i]]]
+  
+  write.csv(df, 
+          file = here(filepath),
+          row.names = FALSE)
+}
+
+```
+
+# Methane
+## Upload Previous Models
+```{r}
+#clear environment from previous
+rm(list=ls())
+
+#upload files
+filenames <- list.files("./Forecasts/Methane", full.names = TRUE)
+
+# Extract base names without extensions (to use as object names)
+object_names <- tools::file_path_sans_ext(basename(filenames))
+
+# Read the CSVs into a named list
+forecasts <- setNames(lapply(filenames, read_csv), object_names)
+
+#create df
+forecast_df <- as.data.frame(lapply(forecasts, function(df) df[[1]]))
+
+#Create objects in global environment.
+list2env(forecasts, .GlobalEnv)
+
+rm(filenames)
+
+#upload test data
+methane_test <- read.csv("./Data/Processed/methane_test.csv")
+```
+
+## Averaging
+Averaging every combination of the models will result in 
+
+```{r}
+# Get column names
+col_names <- names(forecast_df)
+
+# Initialize empty list to hold averaged columns
+avg_forecasts <- list()
+
+# Loop over sizes of combinations (from 2 to 9 models)
+for (r in 1:length(col_names)) {
+  combos <- combn(col_names, r, simplify = FALSE)
+  
+  for (combo in combos) {
+    combo_name <- paste(combo, collapse = "_")
+    avg_forecasts[[combo_name]] <- rowMeans(forecast_df[, combo, drop = FALSE])
+  }
+}
+
+# Convert to a data frame
+avg_forecasts_df <- as.data.frame(avg_forecasts)
+```
+
+Get the performance of each combination and save the top 10 to a separate dataframe
+
+```{r}
+avg_forecasts_accuracy <- data.frame(matrix(ncol = 5, nrow = 0))
+
+#provide column names
+colnames(avg_forecasts_accuracy) <- c('ME', 'RSME', 'MAE', "MPE", "MAPE")
+
+#calculate accuracy statistics
+for (i in 1:length(avg_forecasts_df)) {
+  avg_forecasts_accuracy[i,] <- accuracy(avg_forecasts_df[,i], methane_test$average)
+}
+
+#set row names
+row.names(avg_forecasts_accuracy) <- colnames(avg_forecasts_df)
+```
+
+## Extracting Best Forecasts and save
+
+```{r}
+#get best averaged forecasts
+avg_forecasts_accuracy_best <- rbind(avg_forecasts_accuracy) %>%
+  arrange(abs(MAPE)) %>%
+  head(5) #get 5 best forecasts
+
+forecast_save <- rownames_to_column(avg_forecasts_accuracy_best, var = "Model")
+
+#write into csv
+write.csv(forecast_save, 
+         file = here("Forecasts/methane_accuracy.csv"),
+         row.names = TRUE)
+
+#save averaged forecasts
+#grab names of all averaged forecasts
+avg_names <- forecast_save$Model
+
+#export averaged forecasts
+for (i in seq_along(avg_names)) {
+  filepath <- paste0("Forecasts/Methane_Averages/", avg_names[i], ".csv")
+  
+  df <- avg_forecasts_df[[avg_names[i]]]
+  
+  write.csv(df, 
+          file = here(filepath),
+          row.names = FALSE)
+}
+
 ```

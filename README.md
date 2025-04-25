@@ -60,14 +60,18 @@ The primary folders in the repository are `Data`, `Figures`, and `Code`.
 -   `Code` contains all of the R code associated with the timeseries analysis.
 
 -   `Data` contains all of the data for the analysis. It contains the following
-    sub-folders
+    sub-folders:
 
     -   `Data/Raw`: all of the raw data sets.
 
     -   `Data/Processed`: all of the processed data in a format that is easily readable in R
+    
+-   `Forecasts` contains all of the forecasts and top accuracy statistics produced held in `.csv` files. It contains the following sub-folders:
 
--   `Figures` contains all of the produced graphs from the analysis.
-
+    -   `Forecasts/Methane`: all of the forecasts for methane concentrations
+    
+    -   `Forecasts/Temperature`: all of the forecasts for temperature anomalies
+    
 The `Progress_Tracker.txt` was only contained within the project and not any folders. This file was the task organizer for the project.
 
 This `README.md` file was only contained within the project and not any folders.
@@ -93,10 +97,12 @@ This `README.md` file was only contained within the project and not any folders.
 All R code is contained in Rmarkdown documents location in the `Code`
 folder.
 
--   Wrangling_Visualization: Contains the upload and basic wrangling of monthly data, subsetting into training and test data, and an initial visualization of the entire dataset.
+-   Wrangling: Contains the upload and basic wrangling of monthly data, subsetting into training and test data, and an initial visualization of the entire dataset.
 
--   Methane_Forecasting: Contains all of the methane forecasts conducted using solely methane concentration data.
+-   Rachael_Methane_Forecasting: Contains all of the methane forecasts conducted using solely methane concentration data conducted by Rachael with some code from Zhuocheng and Jingze included.
 
--   Temperature_Forecasting: Contains all of the temperature forecasts conducted using methane concentration data as a predictor for temperature.
+-   Rachael_Temperature_Forecasting: Contains all of the temperature forecasts conducted using methane concentration data as a predictor for temperature conducted by Rachael.
+
+-   Forecast_Averaging: Contains all of the code that will process all produced forecasts and calculate the average forecasts of every combination and their performance statistics.
 
 -   Final_Project: Contains all of the most relevant output from all of the above scripts and the analysis write-up.
