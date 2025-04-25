@@ -117,11 +117,12 @@ summary(tempanom$temp_anomaly)
 
 ```{r}
 #subset data into training (1983-2021) and test data (2022-2024)
+tempanom_all <- subset(tempanom, date >= min(methane$date) & date <= max(methane$date))
 tempanom_training <- subset(tempanom, date >= min(methane$date) & year(date) < 2022)
 tempanom_test <- subset(tempanom, year(date) >= 2022 & date <= max(methane$date))
 
 #save data to processed folder
-write.csv(tempanom, 
+write.csv(tempanom_all, 
           file = "./Data/Processed/tempanom_all.csv",
           row.names=FALSE)
 

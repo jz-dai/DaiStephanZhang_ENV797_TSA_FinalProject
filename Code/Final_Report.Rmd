@@ -1,0 +1,293 @@
+---
+title: "Predicting Temperature with Monthly Global Average Methane Concentrations"
+author: Jingze Dai, Rachael Stephan, & Zhuocheng Zhang
+date: April 25, 2025
+output:
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+```{r message=FALSE, warning=FALSE, include=FALSE}
+#retrieve libraries
+library(here)
+library(ggplot2)
+library(forecast)
+library(cowplot)
+library(Kendall)
+library(tseries)
+library(lubridate)
+library(knitr)
+```
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+#create plot theme
+mytheme <- theme_bw(base_size = 10)+
+  theme(axis.title = element_text(size = 10, hjust = 0.5),
+        plot.title.position = "panel",
+        panel.border = element_rect(colour = "black", fill = NA, linewidth = 0.25),
+        plot.caption = element_text(hjust = 0),
+        legend.box = "vertical",
+        legend.location = "plot",
+        axis.gridlines = element_line(color = "grey", linewidth = 0.25),
+        axis.ticks = element_line(color = "black", linewidth = 0.5),
+        axis.grid = element_blank())
+
+#set plot theme
+theme_set(mytheme)
+```
+
+# Introduction
+
+Greenhouse gases (GHG) are natural, atmospheric gases that can absorb infrared radiation[^1]. GHGs will reabsorb heat energy emitted by Earth and retain it within the atmosphere, re-radiating heat back towards the surface^1^. This phenomena is known as the greenhouse effect. Therefore, GHGs are important determinants of Earth's energy budget and resulting climate^1^. Concentrations of greenhouse gases will naturally oscillate and there are other external climate drivers as well (e.g., Milankovich cycles)^1^. However, the anthropogenic consumption of fossil fuels since the Industrial Revolution have resulted in elevated concentrations of GHGs^1^. The most influential greenhouse gases with regards to contribution to the greenhouse effect are carbon dioxide, methane, and water^1^. 
+
+Methane is commonly regarded as the second most important GHG compared to carbon dioxide - especially considering methane has lower atmospheric concentrations, but carbon dioxide and methane are difficult to compare due to their residence time and radiative forcing capabilities[^2]. Methane has a more potent radiative forcing (i.e., higher heat retention) but a residence time on the order of decades compared to carbon dioxide's centuries^1^. Assuming an equal amount of each gas is released, this will result in methane having more power over climate warming than carbon dioxide at small time scales^2^. Over 20 years in this scenario, methane will be 80 times as powerful as carbon dioxide^2^. Over the next 100 years in this scenario, methane will be 28 times as powerful as carbon dioxide^2^. Therefore, methane is an important consideration for near-future climate considerations, such as within our lifetime.
+
+Two of the major contributors to methane emissions are agricultural practices and fossil fuels[^3]. The fermentation during the digestion process in cattle is the primary source of agricultural methane. It is estimated that up to 264 pounds of methane worldwide are emitted from cattle annually[^4]. Methane emitted through fossil fuels are caused by extraction leaks, crude oil processing, and transportation of the fossil fuels. This results in an estimated global annual emission of 120 million metric tons[^5]. 
+
+Monitoring atmospheric GHG concentrations is important for climate monitoring and tracking the effectiveness of climate change mitigation – including in the green energy transition. This report will investigate the temporal trends in methane concentrations considering the exogenous factors of beef production and socioeconomic factors (as a proxy for fossil fuel consumption). We will use our methane projections to extrapolate trends in climate, represented by temperature anomalies based on an averaged climate from 1901 to 2000.
+
+# Data Sources
+
+The following data sources were used in this analysis and their respective wrangling is described below.
+
+1. *Globally averaged methane concentration data*
+  - Frequency: monthly
+  - Units: ppb
+  - Format: csv file
+  - Source: [NOAA Global Monitoring Laboratory](https://gml.noaa.gov/ccgg/trends_ch4/)
+  
+The initial methane data set was an excel `.csv` file with columns of the year, month, decimal year, average methane concentration, average uncertainty, trend value, and trend uncertainty on a single sheet. It was processed as follows:
+
+-   The header and data were read in as separate data frames because of the excel file formatting.
+-   The header information was set as the column names for the data.
+-   A date was created using the month and year columns using lubridate's `make_date` function. The day was assumed to be the first of the month.
+-   Data set was verified for missing data - none were present. 
+-   Data frames were saved as the full data, training period data, and test period data. The training and testing periods are expanded upon in the methods section.
+
+
+  
+2. *Globally averaged temperature anomaly data (based on a 1901-2000 average)*
+  - Frequency: monthly
+  - Units: degrees Celsius
+  - Format: csv file
+  - Source: [NOAA National Center for Environmental Information
+](https://www.ncei.noaa.gov/access/monitoring/climate-at-a-glance/global/time-series)
+
+The initial temperature anomaly data set was an excel `.csv` file with columns of the date and temperature anomaly on a single sheet. It was processed as follows:
+
+-   Only the data was read into a data frame from the excel file.
+-   The column names for the data frame were manually set.
+-   The date column was converting into date format using lubridate's `ym` function.
+-   Data set was verified for missing data - none were present. 
+-   Data frames were saved as the full data, training period data, and test period data. The training and testing periods are expanded upon in the methods section.
+
+
+
+3. *Aggregated global beef production*
+  - Frequency: yearly
+  - Units: metric tons
+  - Format: csv file
+  - Source: [U.S. Department of Agriculture]()
+
+  
+4. *Socioeconomic factors data set including consumer price index (CPI), industrial production, merchandise exports, and merchandise imports.*
+  - Frequency: monthly
+  - Units: index (2005=100)
+  - Format: csv file
+  - Source [Federal Reserve Bank of Dallas]()
+
+
+
+## Data Summary
+
+The data frames were not combined for analysis, but the relevant factors have been merged into a data frame for summary purposes below. All of the monthly data is shown in a single data frame and yearly data (i.e., beef production) is shown in another data frame)
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+methane <- read.csv("./Data/Processed/methane_all.csv")
+tempanom <- read.csv("./Data/Processed/tempanom_all.csv")
+beef <- read.csv("./Data/Processed/beef_production.csv")
+socec <- read.csv("./Data/Processed/social_economic_factors_monthly.csv")
+
+#combine all data into a data frame
+all_data_df <- data.frame("Date" = methane$date,
+                           "Methane" = methane$average,
+                           "Temperature Anomaly" = tempanom$temp_anomaly,
+                           "CPI" = socec$cpi,
+                           "Exports" = socec$export,
+                           "Imports" = socec$import,
+                           "Industrial Production" = socec$ip)
+
+beef_df <- data.frame(Year = beef$Year,
+                      "Beef Production" = beef$Beef_Production.Tons.)
+
+#create kable
+kable(head(all_data_df, 10),
+      col.names = colnames(all_data_df),
+      caption = "First 10 cases of global methane (ppb), temperature anomaly (degrees celsius), and socioeconomic indicators")
+
+kable(head(beef_df, 10),
+      col.names = colnames(beef_df),
+      caption = "First 10 cases of beef production (metric tons)")
+
+# Get the summary
+## empty df
+summary_df <- data.frame(
+  Variable = character(),
+  Count = numeric(),
+  Mean = numeric(),
+  SD = numeric(),
+  Min = numeric(),
+  Max = numeric(),
+  Pct25 = numeric(),
+  Pct75 = numeric(),
+  stringsAsFactors = FALSE
+)
+
+## grab summary stats for variable in all_data_df
+for (i in 2:length(all_data_df)) {
+  vari <- colnames(all_data_df)[i]
+  leni <- length(all_data_df[,i])
+  meani <- round(mean(all_data_df[,i]),2)
+  stdevi <- round(sd(all_data_df[,i]),2)
+  mini <- min(all_data_df[,i])
+  maxi <- max(all_data_df[,i])
+  pct25i <- quantile(all_data_df[,i], probs = .25)
+  pct75i <- quantile(all_data_df[,i], probs = .75)
+  
+  summary_df[i-1,] <- c(vari, leni, meani, stdevi, mini, maxi, pct25i, pct75i)
+}
+
+summary_df <- rbind(summary_df,
+                    c("Beef Production",
+                      length(beef_df$Beef.Production),
+                      round(mean(beef_df$Beef.Production),2),
+                      round(sd(beef_df$Beef.Production),2),
+                      min(beef_df$Beef.Production),
+                      max(beef_df$Beef.Production),
+                      quantile(beef_df$Beef.Production, probs = .25),
+                      quantile(beef_df$Beef.Production, probs = .75)))
+
+#create kable
+kable(summary_df,
+      digits = 5,
+      col.names = colnames(summary_df),
+      caption = "Summary statistics for all of the variables used in the analysis from July 1, 1983 to November 1, 2024, Beef Production is provided until 2023.")
+```
+
+# Analysis
+
+## Training and Test Periods
+
+The training period was designated as July 1, 1983 to December 1, 2021. The test period was designated as January 1, 2022 to November 1, 2024. These periods were used to filter the data to create test and training data subsets.
+
+## Methane Concentration Predictions
+
+**GENERAL DESCRIPTION OF EACH METHANE DATA SET WITH GENERAL GRAPH**
+
+The methane and temperature time series were decomposed into the component parts with the `decompose` function. The ACF and PACF were also examined. **EXPLAIN ACF AND PACF PLOT**
+
+**ACF AND PACF PLOT**
+
+The following models were used to predict methane concentrations without the use of exogenous variables.
+
+1.    ARIMA using `auto.arima` and decomposed seasonality
+2.    SARIMA using `auto.arima` with Fourier terms
+3.    ARIMA with Fourier terms with `auto.arima` function
+4.    ETS Model with the `stlf` function
+5.    Neural Network Model with the `nnetar` function
+6.    TBATS Model with the `tbats` function
+7.    State Space Model - Exponential Smoothing with the `es` function
+8.    State Space Model - BSM with the `StructTS` function
+
+The following models were used to predict methane concentrations with the use of exogenous variables (i.e., using the `xreg` term).
+
+1.    
+
+All of the above models were averaged together in every possible combination.
+
+The performance of all of the models were examined with the `accuracy` function and the methane test data subset. The performance metrics for the top 10 models are shown below. 
+
+**TALK ABOUT TOP 3 MODELS AND LOOK AT THEIR RESIDUALS**
+
+## Temperature Anomaly Predictions
+
+The temperature anomaly data has a general increasing trend. There is a annual seasonal trend but it is smaller than the random errors and not easily visible. However, it does have a similar shape to the methane seasonality. The remainders do not appear to have any trends and there are few outliers. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+tempanom_train <- read.csv("./Data/Processed/tempanom_training.csv")
+
+ggplot(data = tempanom, aes(x = as.Date(date), y = temp_anomaly))+
+  geom_line()+
+  labs(x = "Date",
+       y = "Temperature Anomaly (*C)",
+       title = "Globally Averaged Temperature Anomaly over the Training Period")
+
+tempanom_train_ts <- ts(tempanom_train$temp_anomaly, 
+                        start = c(1983,7),
+                        frequency = 12)
+
+decomp <- decompose(tempanom_train_ts)
+
+plot(decomp)
+```
+
+The ACF plot shows a gradual decay and the PACF plot shows a sharp drop off after lag 2. This indicates temperature may have an auto-regressive component to the model. There does appear to be a slight seasonal scalloping in the ACF plot. 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+ACF_Plot <- autoplot(Acf(tempanom_train_ts, lag=40, plot = FALSE), 
+                     ylim=c(-0.5,1), 
+                     main="ACF plot")
+PACF_Plot <- autoplot(Pacf(tempanom_train_ts, lag=40, plot = FALSE), 
+                      ylim=c(-0.5,1), 
+                      main="PACF plot")
+
+#create plot grid
+plot_grid(ACF_Plot, PACF_Plot)
+```
+
+The following models were used to predict methane concentrations without the use of exogenous variables.
+
+1.    SARIMA
+2.    ARIMA with Fourier
+
+The following models were used to predict methane concentrations with the use of exogenous variables (i.e., using the `xreg` term).
+
+1.    ARIMAX with Fourier
+2.    SARIMAX
+3.    Neural Network
+4.    Random Forest
+
+All of the above models were averaged together in every possible combination.
+
+The performance of all of the models were examined with the `accuracy` function and the methane test data subset. The performance metrics for the top 5 models are shown below.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+tempanom_accuracy <- read.csv("./Forecasts/temperature_accuracy.csv")
+
+kable(tempanom_accuracy,
+      caption = "The top five temperature anomaly models and their performance statistics sorted by MAPE.")
+```
+
+
+
+Based on this analysis the _________________ model performs the best. We used this model to predict temperature for 3 years into the future, using the whole data set as a training data set and assuming that the current climate scenario does not drastically change. **DOES RACHAEL USE EXOGENOUS VARIABLES OR NOT WILL DEPEND ON UPLOADED CODE**
+
+**INPUT CODE FOR THAT HERE**
+ 
+# Conclusions
+
+
+
+
+
+
+
+# Delete this title: Footnotes
+[^1]: Mann, M.E. (2025, April 11). greenhouse gas. Encyclopedia Britannica. https://www.britannica.com/science/greenhouse-gas
+[^2]: MIT Climate (2024, January 4). Why do we compare methane to carbon dioxide over a 100-year timeframe? Are we underrating the importance of methane emissions? MIT Climate Portal. tps://climate.mit.edu/ask-mit/why-do-we-compare-methane-carbon-dioxide-over-100-year-timeframe-are-we-underrating
+[^3]: Raymond, P., & Hamburg, S. (2024, November 18). Yale experts explain methane emissions. Yale Sustainability. https://sustainability.yale.edu/explainers/yale-experts-explain-methane-emissions
+[^4]:U.S. Environmental Protection Agency. (2020, October). Agriculture and aquaculture: Food for thought. https://www.epa.gov/snep/agriculture-and-aquaculture-food-thought 
+[^5]:International Energy Agency. (2024). Global Methane Tracker 2024: Key findings. IEA.
+https://www.iea.org/reports/global-methane-tracker-2024/key-findings 
+
+

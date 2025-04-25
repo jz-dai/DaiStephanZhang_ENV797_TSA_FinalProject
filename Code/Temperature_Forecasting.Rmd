@@ -27,6 +27,8 @@ library(tseries)
 library(kableExtra)
 library(dplyr)
 library(smooth)
+library(randomForest)
+library(xts)
 
 set.seed(797)
 ```
@@ -138,49 +140,226 @@ methane_temp_cor <- cor(methane_temp)
 ```
 
 # Model Fitting
+## Endogenous Only
+### ------ ARIMA
+
+```{r echo=FALSE}
+#autofit the sarima model 
+arima_autofit <- auto.arima(methane_deseasoned, 
+                            max.D = 0, 
+                            max.P = 0, 
+                            max.Q = 0)
+print(arima_autofit)
+
+#get residuals
+checkresiduals(arima_autofit)
+
+#create the sarima forecast with the autofit
+forecast_arima <- forecast(object = arima_autofit, h = length(methane_test_ts)) 
+
+#add seasonality
+forecast_arima <- forecast_arima$mean + rep(tail(methane_seasonality, 12), 
+                                                length.out = length(methane_test_ts))
+
+#calculate accuracy metrics
+forecast_arima_accuracy <- accuracy(forecast_arima, methane_test_ts)
+
+#plot the forecast
+autoplot(forecast_arima)
+```
+
+The ARIMA auto-fit was: ARIMA(5,2,4).
+
+The residuals look pretty good. Otherwise, the residuals are primarily not significant in the ACF plot and are normally distributed.
+
+### SARIMA
+
+```{r echo=FALSE}
+#autofit the sarima model
+sarima_autofit <- auto.arima(tempanom_train_ts)
+
+#create the sarima forecast with the autofit
+forecast_sarima <- forecast(object = sarima_autofit, h = length(tempanom_test_ts))
+
+#calculate accuracy metrics
+forecast_sarima_accuracy <- accuracy(forecast_sarima$mean, tempanom_test_ts)
+
+#write to csv
+write.csv(forecast_sarima$mean, 
+         file = "./Forecasts/Temperature/sarima.csv",
+         row.names = FALSE)
+```
+
+### ARIMA with Fourier
+
+```{r echo=FALSE}
+#autofit the arima model
+arima_fourier_autofit <- auto.arima(tempanom_train_msts,
+                                    seasonal=FALSE,
+                                    lambda=0,
+                                    xreg=fourier(tempanom_train_msts,
+                                                 K=c(2,4)))
+
+#create the arima forecast with the autofit
+forecast_arima_fourier <- forecast(object = arima_fourier_autofit,
+                                   xreg=fourier(tempanom_train_msts,
+                                                K=c(2,4),
+                                                h=length(tempanom_test_msts)),
+                                   h=length(tempanom_test_msts))
+  
+#calculate accuracy metrics
+forecast_arima_fourier_accuracy <- accuracy(forecast_arima_fourier$mean, tempanom_test_msts)
+
+#write to csv
+write.csv(forecast_arima_fourier$mean, 
+         file = "./Forecasts/Temperature/arimaFourier.csv",
+         row.names = FALSE)
+```
+
+### ------STL+ETS
+
+```{r}
+#fit STL with ETS
+stl_ets_fit <- stlm(methane_train_ts, s.window = "periodic", method = "ets")
+print(stl_ets_fit$model)
+
+#forecasting test data
+stl_ets_forecast <- forecast(stl_ets_fit, h = length(methane_test_ts))
+
+#accuracy assessment
+stl_ets_accuracy <- accuracy(stl_ets_forecast$mean, methane_test_ts)
+
+#visualization
+plot(stl_ets_forecast)
+```
+
+###-------------TBATS
+
+```{r}
+#fit TBATS
+tbats_fit <- tbats(methane_train_msts)
+print(tbats_fit)
+checkresiduals(tbats_fit)
+
+#forecasting test data
+tbats_forecast <- forecast(tbats_fit, h = length(methane_test_ts))
+
+#accuracy assessment
+tbats_accuracy <- accuracy(tbats_forecast$mean, methane_test_ts)
+
+#visualization
+plot(tbats_forecast)
+```
+
+###------------ Neuron Network
+
+```{r}
+
+NN_fit <- nnetar(methane_train_ts, p = 1, P = 7)
+
+NN_for <- forecast(NN_fit, h = length(methane_test_ts))
+
+forecast_NN_accuracy <- accuracy(NN_for$mean, methane_test_ts)
+
+print(forecast_NN_accuracy)
+
+plot(NN_for)
+
+```
 
 ## Exogenous Variables
 
-### ARIMAX
+### SARIMAX
 
 ```{r}
 #autofit arimax
 arimax_fit <- auto.arima(tempanom_train_ts,
                          xreg = methane_train_ts)
-#get summary
-summary(arimax_fit)
-
-#check residuals
-checkresiduals(arimax_fit)
 
 #create forecast
 forecast_arimax <- forecast(arimax_fit, 
                             xreg = methane_test_ts, 
                             h = length(methane_test))
 
+#write into csv
+write.csv(forecast_arimax$mean, 
+         file = here("Forecasts/Temperature/sarimax.csv"),
+         row.names = FALSE)
+
 #calculate accuracy metrics
 forecast_arimax_accuracy <- accuracy(forecast_arimax$mean, tempanom_test_ts)
+
 ```
 
+### ARIMAX with Fourier
+
 ```{r}
-#autofit arimax
+#autofit the arima model
+arima_fourier_autofit <- auto.arima(tempanom_train_msts,
+                                    seasonal=FALSE,
+                                    lambda=0,
+                                    xreg=fourier(methane_train_msts,
+                                                 K=c(2,4)))
+
+#create the arima forecast with the autofit
+forecast_arima_fourier <- forecast(object = arima_fourier_autofit,
+                                   xreg=fourier(methane_train_msts,
+                                                K=c(2,4),
+                                                h=length(tempanom_test_ts)),
+                                   h=length(tempanom_test_ts))
+
+#write into csv
+write.csv(forecast_arima_fourier$mean, 
+         file = here("Forecasts/Temperature/arimaxFourier.csv"),
+         row.names = FALSE)
+```
+
+
+
+### Neural Network
+
+```{r}
+#autofit
 nnetar_fit <- nnetar(tempanom_train_msts, 
               xreg = methane_train_msts,
               repeats = 10)
-
-#get summary
-summary(nnetar_fit)
-
-#check residuals
-checkresiduals(nnetar_fit)
 
 #create forecast
 forecast_nnetar <- forecast(nnetar_fit, 
                             xreg = methane_test_msts, 
                             h = length(methane_test))
 
+#write into csv
+write.csv(forecast_nnetar$mean, 
+         file = here("Forecasts/Temperature/nnetarExo.csv"),
+         row.names = FALSE)
+
 #calculate accuracy metrics
 forecast_nnetar_accuracy <- accuracy(forecast_nnetar$mean, tempanom_test_msts)
+```
+
+### Random Forest
+
+```{r}
+#create dataframe for test
+rf_train_df <- data.frame("tempanom" = tempanom_train$temp_anomaly,
+                          "methane" = methane_train$average)
+
+rf_test_df <- data.frame("methane" = methane_test$average)
+
+# Fit a Random Forest model
+rf_fit <- randomForest(tempanom ~ ., data = rf_train_df, ntree = 100)
+
+# Make predictions on the test data
+forecast_rf <- predict(rf_fit, newdata = rf_test_df)
+
+#write into csv
+write.csv(forecast_rf, 
+         file = here("Forecasts/Temperature/rfExo.csv"),
+         row.names = FALSE)
+
+#calculate accuracy metrics
+forecast_rf_accuracy <- accuracy(forecast_rf, tempanom_test_msts)
 ```
 
 # Performance Comparison
@@ -188,15 +367,17 @@ forecast_nnetar_accuracy <- accuracy(forecast_nnetar$mean, tempanom_test_msts)
 ```{r echo=FALSE}
 # Combine performance vectors as rows
 forecast_performance <- data.frame(rbind(forecast_arimax_accuracy, 
-                                         forecast_nnetar_accuracy))
+                                         forecast_nnetar_accuracy,
+                                         forecast_rf_accuracy))
 
 # Set row names
 rownames(forecast_performance) <- c("ARIMAX",
-                                    "NNETAR")
+                                    "NNETAR",
+                                    "Random Forest")
 ```
 
 ```{r echo=FALSE}
-kable(forecast_performance[,1:6], 
+kable(forecast_performance[,1:5], 
       caption = "Forecast Accuracy",
       digits = 3)
 ```
@@ -204,16 +385,22 @@ kable(forecast_performance[,1:6],
 # Plot
 
 ```{r}
+# Convert predictions to a ts object
+rf_ts <- ts(forecast_rf, start = start(tempanom_test_ts), frequency = frequency(tempanom_test_ts))
+
+# Plot properly
 autoplot(tempanom_train_ts) +
   geom_line(data = tempanom_test_ts, colour = "grey40") +
   autolayer(forecast_nnetar, PI = FALSE, series = "NNETAR") +
   autolayer(forecast_arimax, PI = FALSE, series = "ARIMAX") +
+  autolayer(rf_ts, series = "Random Forest", size = 1, color = "firebrick") +
   labs(x = "Time",
        y = "Temperature Anomaly (*C)",
        title = "Temperature Anomaly over Time") +
   guides(colour = guide_legend(title = "Forecast")) +
-  xlim(c(2010, 2025))+
-  ylim(c(0.4,1.5))
+  xlim(c(2010, 2025)) +
+  ylim(c(0.4, 1.5))
+
 
 ```
 
@@ -226,7 +413,8 @@ Averaging every combination of the models will result in
 #create a dataframe of all of the forecasts
 forecasts <- data.frame(
   "arimax" = forecast_arimax$mean,
-  "NNETAR" = forecast_nnetar$mean)
+  "NNETAR" = forecast_nnetar$mean,
+  )
 
 # Get column names
 col_names <- names(forecasts)
