@@ -294,9 +294,7 @@ The models with the best predictor is as follows:
 6.    STL+Arima Model with cpi variable
 7.    State Space Model with industrial production variable
 
-
-
-All of the above models were averaged together in every possible combination. The performance of all of the models were examined with the `accuracy` function and the methane test data subset. All of the best performing models were an average of multiple models both involving and not involving exogenous variables. All of these forecasts closely follow the trend in methane (Fig. 5). **Expand a little more** 
+All of the above models were averaged together in every possible combination. The performance of all of the models were examined with the `accuracy` function and the methane test data subset. All of the best performing models were an average of multiple models both involving and not involving exogenous variables. All of these forecasts closely follow the trend in methane (Fig. 5). 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 methane_accuracy <- read.csv("./Forecasts/methane_accuracy.csv")%>%
@@ -342,7 +340,7 @@ ggplot(data = methane_graph, aes(x = as.Date(date), y = average)) +
 
 **TALK ABOUT TOP 3 MODELS AND LOOK AT THEIR RESIDUALS**
 
-**IDENTIFY BEST FORECAST**
+\newpage
 
 ## Temperature Anomaly Predictions
 
@@ -382,8 +380,6 @@ PACF_Plot <- autoplot(Pacf(tempanom_train_ts, lag=40, plot = FALSE),
 #create plot grid
 plot_grid(ACF_Plot, PACF_Plot)
 ```
-
-**ADD IN STATIONARITY TESTS AND INTERPRET THEIR RESULTS IF TIME**
 
 The following models were used to predict methane concentrations without the use of exogenous variables.
 
@@ -438,7 +434,6 @@ ggplot(data = tempanom_graph, aes(x = as.Date(date), y = temp_anomaly)) +
   scale_x_date(date_labels = "%b %Y") 
 ```
 
-
 We used the SARIMAX model to predict temperature for 3 years into the future, using the whole data set as a training data set and assuming that the current climate scenario does not drastically change (Fig. 10). The future project appears to be strongly dominated by the seasonality of methane concentrations with a bias for the stable trend over the past couple of years. It does not seem likely that this forecast will accurately reflect the future temperatures. 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Future temperature forecasts based on the sarimax model with exogenous variable of methane."}
@@ -461,13 +456,21 @@ ggplot(data = tempanom_graph, aes(x = as.Date(date), y = temp_anomaly)) +
  
 # Conclusions
 
+Using a variety of statistical models, both involving and not involving exogenous variables of socioeconomic factors, methane concentrations were able to be accurately forecasted. The most successful model (MAPE = 0.0540012) was a average of the following models:
+
+-	STL + ETS
+-	Neural Network
+-	Neural Network with Exogenous variable of socioeconomic factor
+-	Neural Network with Fourier terms
+-	Steady State model with exponential smoothing
+-	Steady State model with exponential smoothing with Exogenous variable of socioeconomic factor
+-	STL + ARIMA model with exogenous variable of socioeconomic factors
+
+We hypothesize that the best performing model was an average of many models because the models had different strengths in capturing the trend and seasonality. The behavior of the methane concentrations was also very regular, which made it easy to accurately predict the concentrations. The socioeconomic factors, which were a proxy for release from fossil fuels, resulted in some of the highest performing time series. All of the socioeconomic factors had a high correlation with methane, which likely helped to improve predictions. From our predictions, we can conclude that methane concentrations have a clear seasonality and are consistently increasing. We do not think these models could be improved much with the current dataset. 
+
+Temperature forecasts were best predicted using a SARIMAX model with the exogenous variable of methane concentrations. The SARIMAX model did not perform well in the training data. The behavior was driven by the methane exogenous variable, as seen in the familiar seasonal trends that are not previously prevalent in the temperature anomaly data. It also seems that the model is also biased by the recent stabilization in the temperature anomaly trend. More models would have to be run to try and circumvent this issue. We could also be attempting to forecast at an inopportune timepoint (i.e., at the start of a change in the trend). Correspondingly, our forecasts of temperature into the future are likely inaccurate as well. More models would have to be run to try and circumvent this issue. Perhaps models with either a longer memory or a quicker response to changes in trends will perform better. Another potential avenue for exploration is other exogenous variables, such as other GHGs. Temperature is likely regulated by a number of different factors and methane alone does not fully capture the relationships\. 
 
 
-
-
-
-
-# Delete this title: Footnotes
 [^1]: Mann, M.E. (2025, April 11). greenhouse gas. Encyclopedia Britannica. https://www.britannica.com/science/greenhouse-gas
 [^2]: MIT Climate (2024, January 4). Why do we compare methane to carbon dioxide over a 100-year timeframe? Are we underrating the importance of methane emissions? MIT Climate Portal. tps://climate.mit.edu/ask-mit/why-do-we-compare-methane-carbon-dioxide-over-100-year-timeframe-are-we-underrating
 [^3]: Raymond, P., & Hamburg, S. (2024, November 18). Yale experts explain methane emissions. Yale Sustainability. https://sustainability.yale.edu/explainers/yale-experts-explain-methane-emissions
