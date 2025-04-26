@@ -82,7 +82,7 @@ The initial temperature anomaly data set was an excel `.csv` file with columns o
   - Frequency: yearly
   - Units: metric tons
   - Format: csv file
-  - Source: \href{**INSERT LINK HERE**}{\textcolor{blue}{U.S. Department of Agriculture}}
+  - Source: \href{https://www.fas.usda.gov/data/production/commodity/0111000}{\textcolor{blue}{U.S. Department of Agriculture}}
 
   
 4. *Socioeconomic factors data set including consumer price index (CPI), industrial production, merchandise exports, and merchandise imports.*
@@ -230,6 +230,7 @@ methane_train_ts <- ts(methane_train$average,
                         frequency = 12)
 
 decomp <- decompose(methane_train_ts)
+deseasoned <- methane_train_ts - decomp$seasonal
 
 plot(decomp)
 ```
@@ -248,9 +249,22 @@ PACF_Plot <- autoplot(Pacf(methane_train_ts, lag=40, plot = FALSE),
 plot_grid(ACF_Plot, PACF_Plot)
 ```
 
-**ADD IN STATIONARITY TESTS AND INTERPRET THEIR RESULTS**
+Before fitting into an ARIMA model, we preformed Augmented Dickey-Fuller (ADF) test and Mann-Kendall test to check for deterministic and stochastic trends in the methane dataset.
 
-The following models were used to predict methane concentrations without the use of exogenous variables.
+```{r echo=FALSE, warning=FALSE}
+print("Mann-Kendall Test")
+summary(MannKendall(deseasoned))
+```
+From the results of the Mann-Kendall test, the p-value is less than 0.05, indicating a significant trend. The test score of 102531 indicates a strong increasing deterministic trend, which agrees with the upward trend in the decomposed series. 
+
+```{r echo=FALSE, warning=FALSE}
+print(adf.test(deseasoned, alternative = "stationary"))
+```
+
+From the ADF test, the p-value of 0.6932 is greater than the significance level of 0.05, meaning that there is not enough evidence to reject the null hypothesis. This series appears to have stochastic trend that changes over time.
+
+
+Next, the following models were used to predict methane concentrations without the use of exogenous variables.
 
 1.    ARIMA using `auto.arima` and adding the decomposed seasonality (from `decompose`) afterwards
 2.    SARIMA using `auto.arima` with Fourier terms
@@ -292,6 +306,8 @@ methane_accuracy <- read.csv("./Forecasts/methane_accuracy.csv")%>%
 kable(methane_accuracy,
       caption = "The top five methane concentration models and their performance statistics sorted by MAPE.")
 ```
+
+
 ```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="The top five performing methane concentration forecast models. Models are numbered by their performance by MAPE and the full title can be found in Table 4"}
 #upload relevant forecasts
 model1 <- read.csv("./Forecasts/Methane_Averages/ets_nn_nnExoSE_nnFourier_sses_ssesExoSE.csv")
