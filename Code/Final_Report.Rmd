@@ -87,6 +87,7 @@ The initial temperature anomaly data set was an excel `.csv` file with columns o
 From the interactive panel, world beef production from 1961 to 2023 was selected, and displayed data was downloaded from a given link on the website. 
 
 The initial beef production data set was an excel `.csv` file with columns of the Entity (country or region of choice), Code, Year, and beef and buffalo production in tonnes on a single sheet. It was processed as follows:
+
 -   The data was read and stored as a dataframe, and headers were manually added as the column names.
 -   Data set was verified for missing data - none were present. 
 -   Data frames were saved as the full data.
@@ -98,6 +99,7 @@ The initial beef production data set was an excel `.csv` file with columns of th
   - Source \href{https://www.dallasfed.org/research/econdata#international}{\textcolor{blue}{Federal Reserve Bank of Dallas}}
 
 It was processed as follows:
+
 -   The date column was converting into date format using lubridate's `ymd` function.
 -   Use the `filter` function to select the dates that match the methane data, and then save to the processed `.csv` file.
 -   There is no missing data, and there is also no outliers.
@@ -300,6 +302,16 @@ The following models were used to predict methane concentrations with the use of
 
 Given the vast number of possible variable combinations, we created a variable portfolio and the model combination, both involving and not involving exogenous variables. we explored all possible combinations of variables and models by creating a loop function to iterate through all combinations and perform forecasting. The total, we evaluated over 60,000 combinations. The performance of all of the models were examined with the `accuracy` function and the methane test data subset. We therefore choose the variable which has lower `MAPE` score from these loops. All of these forecasts closely follow the trend in methane (Fig. 5). However, it is noteworthy that all averaged forecast models tend to overestimate the dips in methane concentration.
 
+The Top 1 method is the combination of 6 models (Table 4):
+
+a) ETS model
+b) Neural Network Model,
+c) Neural Network with exogenous variable and seasonality,
+d) Neural Network with Fourier,
+c) State Space Model, and
+e) State Space with exogenous variable and seasonality.
+
+However, other top ranked models have similarly low MAPE values. 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 methane_accuracy <- read.csv("./Forecasts/methane_accuracy.csv")%>%
@@ -343,17 +355,9 @@ ggplot(data = methane_graph, aes(x = as.Date(date), y = average)) +
   scale_x_date(date_labels = "%b %Y") 
 ```
 
-The Top 1 method is the combination of 6 models:
-a) ETS model
-b) Neural Network Model,
-c) Neural Network with exogenous variable and seasonality,
-d) Neural Network with Fourier,
-c) State Space Model, and
-e) State Space with exogenous variable and seasonality.
+The residual plot from `checkresiduals()` shows that the residuals fluctuate randomly around zero (Fig. 6). The ACF plot shows a significant spike at lag 1, but subsequent lags are mostly within the 95% confidence bounds. The residuals approximately follow a normal distribution, but there is slight skewness from the fitted normal curve.
 
-The residual plot from `checkresiduals()` shows that the residuals fluctuate randomly around zero. The ACF plot shows a significant spike at lag 1, but subsequent lags are mostly within the 95% confidence bounds. The residuals approximately follow a normal distribution, but there is slight skewness from the fitted normal curve.
-
-```{r, fig.cap="Residual plot for best model 1"}
+```{r echo=FALSE, fig.cap="Residual, message=FALSE, warning=FALSE}
 
 residual_model1 <- methane_test$average - model1$x
 
@@ -362,7 +366,8 @@ checkresiduals(residual_model1)
 
 ```
 
-The Top 1 method is the combination of 7 models:
+The Top 2 method is the combination of 7 models:
+
 a) ARIMA model with Fourier terms,
 b) Neural Network model,
 c) Neural Network with exogenous variables and seasonality,
@@ -371,27 +376,21 @@ e) State Space Exponential Smoothing model,
 f) State Space model with exogenous variables and seasonality, and
 g) STL decomposition with ARIMA, exogenous variables, and seasonal adjustment.
 
-```{r, fig.cap="Residual plot for best model 2"}
+The residual pattern is similar to Model 1, but there exist less randomness of the residual (Fig. 7). In addition, the spike of lag 1 is higher, and the skewness from normal distribution is higher. These suggest a higher degree of autocorrelation.
+
+```{r echo=FALSE, fig.cap="Residual, message=FALSE, warning=FALSE}
 
 residual_model2 <- methane_test$average - model2$x
 
 checkresiduals(residual_model2)
-
-
 ```
 
-The residual pattern is similar to Model 1, but there exist less randomness of the residual. In addition, the spike of lag 1 is higher, and the skewness from normal distribution is higher. These suggest a higher degree of autocorrelation.
-
-
-
-
-**TALK ABOUT TOP 3 MODELS AND LOOK AT THEIR RESIDUALS**
 
 \newpage
 
 ## Temperature Anomaly Predictions
 
-Temperature anomaly data was examined using the `decompose` function (Fig. 6 and 7). The temperature anomaly data has a general increasing trend. There is a annual seasonal trend but it is smaller than the random errors and not easily visible. However, it does have a similar shape to the methane seasonality. The remainders do not appear to have any trends and there are few outliers. 
+Temperature anomaly data was examined using the `decompose` function (Fig. 9 and 10). The temperature anomaly data has a general increasing trend. There is a annual seasonal trend but it is smaller than the random errors and not easily visible. However, it does have a similar shape to the methane seasonality. The remainders do not appear to have any trends and there are few outliers. 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="The globally Averaged Temperature Anomaly over the Training Period"}
 #read in training data
@@ -407,6 +406,7 @@ tempanom_train_ts <- ts(tempanom_train$temp_anomaly,
                         start = c(1983,7),
                         frequency = 12)
 ```
+
 ```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="The components of the temperature time series"}
 #graph the series components
 decomp <- decompose(tempanom_train_ts)
@@ -414,9 +414,9 @@ decomp <- decompose(tempanom_train_ts)
 plot(decomp)
 ```
 
-The ACF plot shows a gradual decay and the PACF plot shows a sharp drop off after lag 2 (Fig. 8). This indicates temperature may have an auto-regressive component to the model. There does appear to be a slight seasonal scalloping in the ACF plot. 
+The ACF plot shows a gradual decay and the PACF plot shows a sharp drop off after lag 2 (Fig. 11). This indicates temperature may have an auto-regressive component to the model. There does appear to be a slight seasonal scalloping in the ACF plot. 
 
-```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="The autocorrelation and partial autocorrelation plots of the temperature time series"}
+```{r echo=FALSE, fig.cap="The, message=FALSE, warning=FALSE}
 ACF_Plot <- autoplot(Acf(tempanom_train_ts, lag=40, plot = FALSE), 
                      ylim=c(-0.5,1), 
                      main="ACF plot")
@@ -440,7 +440,7 @@ The following models were used to predict methane concentrations with the use of
 3.    Neural Network
 4.    Random Forest
 
-All of the above models were averaged together in every possible combination. The performance of all of the models were examined with the `accuracy` function and the methane test data subset. The best performing model was the SARIMAX model. However, the MAPE was much higher than in our methane forecasts (Table 5), and the forecast does not accurately reflect the most recent upwards trends in temperature (Fig. 9). The temperature trended upwards for most of the data record, but recently that trend stabilized. Therefore, the models are likely biased towards recent events and did not capture the shift back to an upwards trend.
+All of the above models were averaged together in every possible combination. The performance of all of the models were examined with the `accuracy` function and the methane test data subset. The best performing model was the SARIMAX model. However, the MAPE was much higher than in our methane forecasts (Table 5), and the forecast does not accurately reflect the most recent upwards trends in temperature (Fig. 12). The temperature trended upwards for most of the data record, but recently that trend stabilized. Therefore, the models are likely biased towards recent events and did not capture the shift back to an upwards trend.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 tempanom_accuracy <- read.csv("./Forecasts/temperature_accuracy.csv") %>%
@@ -481,7 +481,7 @@ ggplot(data = tempanom_graph, aes(x = as.Date(date), y = temp_anomaly)) +
   scale_x_date(date_labels = "%b %Y") 
 ```
 
-The residuals of the SARIMAX model appear to imdicate that this is a good fit (Fig. 11). There is no trend in residuals time over. Although, there are some spikes. The ACF plot does not have any significant lags, indicating that autocorrelation is not prevalent. Finally, the histogram indicates that residuals are mostly normal with a slight skew - but nothing alarming. 
+The residuals of the SARIMAX model appear to imdicate that this is a good fit (Fig. 13). There is no trend in residuals time over. Although, there are some spikes. The ACF plot does not have any significant lags, indicating that autocorrelation is not prevalent. Finally, the histogram indicates that residuals are mostly normal with a slight skew - but nothing alarming. 
 
 ```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='80%', fig.cap="Residual analysis of the Temperature anomaly SARIMAX forecast"}
 #autofit arimax
@@ -503,7 +503,7 @@ forecast_arimax <- forecast(arimax_fit,
 checkresiduals(forecast_arimax)
 ```
 
-We used the SARIMAX model to predict temperature for 3 years into the future, using the whole data set as a training data set and assuming that the current climate scenario does not drastically change (Fig. 11). The future project appears to be strongly dominated by the seasonality of methane concentrations with a bias for the stable trend over the past couple of years. It does not seem likely that this forecast will accurately reflect the future temperatures. 
+We used the SARIMAX model to predict temperature for 3 years into the future, using the whole data set as a training data set and assuming that the current climate scenario does not drastically change (Fig. 14). The future project appears to be strongly dominated by the seasonality of methane concentrations with a bias for the stable trend over the past couple of years. It does not seem likely that this forecast will accurately reflect the future temperatures. 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Future temperature forecasts based on the sarimax model with exogenous variable of methane."}
 tempanom_future <- read.csv("./Forecasts/temperature_future.csv") %>%
@@ -521,6 +521,8 @@ ggplot(data = tempanom_graph, aes(x = as.Date(date), y = temp_anomaly)) +
        color = "Forecast Model")+
   scale_x_date(date_labels = "%b %Y") 
 ```
+
+\newpage
 
 # Conclusions
 
