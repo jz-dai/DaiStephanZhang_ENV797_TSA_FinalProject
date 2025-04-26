@@ -298,8 +298,7 @@ The following models were used to predict methane concentrations with the use of
 8.    ARIMAX Model with beef variable (this model generates annual forecast, not monthly forecast, due to the lack of monthly beef production dataset)
 
 
-Given the vast number of possible variable combinations, we created a variable portfolio and the model combination, both involving and not involving exogenous variables. we explored all possible combinations of variables and models by creating a loop function to iterate through all combinations and perform forecasting. The total, we evaluated over 60,000 combinations. The performance of all of the models were examined with the `accuracy` function and the methane test data subset. We therefore choose the variable which has lower `MAPE` score from these loops. All of these forecasts closely follow the trend in methane (Fig. 5). However, it is noteworthy that all averaged forecast models tend to overestimate the dips in methane concentration. This might be resulted from 
-
+Given the vast number of possible variable combinations, we created a variable portfolio and the model combination, both involving and not involving exogenous variables. we explored all possible combinations of variables and models by creating a loop function to iterate through all combinations and perform forecasting. The total, we evaluated over 60,000 combinations. The performance of all of the models were examined with the `accuracy` function and the methane test data subset. We therefore choose the variable which has lower `MAPE` score from these loops. All of these forecasts closely follow the trend in methane (Fig. 5). However, it is noteworthy that all averaged forecast models tend to overestimate the dips in methane concentration.
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
