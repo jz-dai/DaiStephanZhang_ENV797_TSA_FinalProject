@@ -89,7 +89,12 @@ The initial temperature anomaly data set was an excel `.csv` file with columns o
   - Frequency: monthly
   - Units: index (2005=100)
   - Format: csv file
-  - Source \href{**INSERT LINK HERE**}{\textcolor{blue}{Federal Reserve Bank of Dallas}}
+  - Source \href{https://www.dallasfed.org/research/econdata#international}{\textcolor{blue}{Federal Reserve Bank of Dallas}}
+
+It was processed as follows:
+-   The date column was converting into date format using lubridate's `ymd` function.
+-   Use the `filter` function to select the dates that match the methane data, and then save to the processed `.csv` file.
+-   There is no missing data, and there is also no outliers.
 
 ## Data Summary
 
@@ -112,6 +117,8 @@ all_data_df <- data.frame("Date" = methane$date,
 
 beef_df <- data.frame(Year = beef$Year,
                       "Beef Production" = beef$Beef_Production.Tons.)
+
+beef_df$Beef.Production <- beef_df$Beef.Production / 100000
 
 # Get the summary
 ## empty df
@@ -153,7 +160,7 @@ summary_df <- rbind(summary_df,
                       quantile(beef_df$Beef.Production, probs = .75)))
 
 ## add units
-summary_df$Units <- c("ppb", "degrees Celsius", rep("index (2005=100)",4), "metric tons")
+summary_df$Units <- c("ppb", "degrees Celsius", rep("index (2005=100)",4), "metric tons (million)")
 
 summary_df <- summary_df %>%
   relocate(Units, .after = Variable)
