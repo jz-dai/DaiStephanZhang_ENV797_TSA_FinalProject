@@ -436,6 +436,10 @@ ggplot(data = tempanom_graph, aes(x = as.Date(date), y = temp_anomaly)) +
   scale_x_date(date_labels = "%b %Y") 
 ```
 
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='80%', fig.cap="Residual analysis of the Temperature anomaly SARIMAX forecast"}
+
+```
+
 We used the SARIMAX model to predict temperature for 3 years into the future, using the whole data set as a training data set and assuming that the current climate scenario does not drastically change (Fig. 10). The future project appears to be strongly dominated by the seasonality of methane concentrations with a bias for the stable trend over the past couple of years. It does not seem likely that this forecast will accurately reflect the future temperatures. 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Future temperature forecasts based on the sarimax model with exogenous variable of methane."}
