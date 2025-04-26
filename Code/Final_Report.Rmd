@@ -357,7 +357,7 @@ ggplot(data = methane_graph, aes(x = as.Date(date), y = average)) +
 
 The residual plot from `checkresiduals()` shows that the residuals fluctuate randomly around zero (Fig. 6). The ACF plot shows a significant spike at lag 1, but subsequent lags are mostly within the 95% confidence bounds. The residuals approximately follow a normal distribution, but there is slight skewness from the fitted normal curve.
 
-```{r echo=FALSE, fig.cap="Residual, message=FALSE, warning=FALSE}
+```{r echo=FALSE, fig.cap = "Residual plot for best model 1", message=FALSE, warning=FALSE}
 
 residual_model1 <- methane_test$average - model1$x
 
@@ -378,7 +378,7 @@ g) STL decomposition with ARIMA, exogenous variables, and seasonal adjustment.
 
 The residual pattern is similar to Model 1, but there exist less randomness of the residual (Fig. 7). In addition, the spike of lag 1 is higher, and the skewness from normal distribution is higher. These suggest a higher degree of autocorrelation.
 
-```{r echo=FALSE, fig.cap="Residual, message=FALSE, warning=FALSE}
+```{r echo=FALSE, fig.cap="Residual plot for best model 2", message=FALSE, warning=FALSE}
 
 residual_model2 <- methane_test$average - model2$x
 
@@ -416,7 +416,7 @@ plot(decomp)
 
 The ACF plot shows a gradual decay and the PACF plot shows a sharp drop off after lag 2 (Fig. 11). This indicates temperature may have an auto-regressive component to the model. There does appear to be a slight seasonal scalloping in the ACF plot. 
 
-```{r echo=FALSE, fig.cap="The, message=FALSE, warning=FALSE}
+```{r echo=FALSE, fig.cap="The autocorrelation and partial autocorrelation plots of the temperature time series", message=FALSE, warning=FALSE}
 ACF_Plot <- autoplot(Acf(tempanom_train_ts, lag=40, plot = FALSE), 
                      ylim=c(-0.5,1), 
                      main="ACF plot")
