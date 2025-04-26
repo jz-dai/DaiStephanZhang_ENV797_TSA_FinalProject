@@ -294,6 +294,11 @@ write.csv(forecast_arimax$mean,
          file = here("Forecasts/Temperature/sarimax.csv"),
          row.names = FALSE)
 
+#write into csv for residual metrics
+write.csv(forecast_arimax, 
+         file = here("Forecasts/sarimax_residual.csv"),
+         row.names = FALSE)
+
 #calculate accuracy metrics
 forecast_arimax_accuracy <- accuracy(forecast_arimax$mean, tempanom_test_ts)
 

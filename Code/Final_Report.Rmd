@@ -455,7 +455,6 @@ ggplot(data = tempanom_graph, aes(x = as.Date(date), y = temp_anomaly)) +
   scale_x_date(date_labels = "%b %Y") 
 ```
 
- 
 # Conclusions
 
 Using a variety of statistical models, both involving and not involving exogenous variables of socioeconomic factors, methane concentrations were able to be accurately forecasted. The most successful model (MAPE = 0.0540012) was a average of the following models:
