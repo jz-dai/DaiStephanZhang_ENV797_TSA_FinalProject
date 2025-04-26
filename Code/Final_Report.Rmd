@@ -268,7 +268,6 @@ As presented in the variable correlation matrix plot, socioeconomic factors exhi
 a) Use a non-linear model (e.g., Neural Network) to incorporate multiple variables simultaneously.
 b) Include only one variable at a time in the linear model.
 
-Given the vast number of possible variable combinations, we created a loop function to iterate through all combinations and perform forecasting. We therefore choose the variable which has the lowest `MAPE` score from these loops.
 
 The models with the best predictor is as follows:
 
@@ -281,8 +280,9 @@ The models with the best predictor is as follows:
 7.    State Space Model with industrial production variable
 
 
+Given the vast number of possible variable combinations, we created a variable portfolio and the model combination, both involving and not involving exogenous variables. we explored all possible combinations of variables and models by creating a loop function to iterate through all combinations and perform forecasting. The total, we evaluated over 60,000 combinations. The performance of all of the models were examined with the `accuracy` function and the methane test data subset. We therefore choose the variable which has lower `MAPE` score from these loops. All of these forecasts closely follow the trend in methane (Fig. 5). 
 
-All of the above models were averaged together in every possible combination. The performance of all of the models were examined with the `accuracy` function and the methane test data subset. All of the best performing models were an average of multiple models both involving and not involving exogenous variables. All of these forecasts closely follow the trend in methane (Fig. 5). **Expand a little more** 
+
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 methane_accuracy <- read.csv("./Forecasts/methane_accuracy.csv")%>%
