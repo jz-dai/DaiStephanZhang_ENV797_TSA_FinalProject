@@ -82,8 +82,14 @@ The initial temperature anomaly data set was an excel `.csv` file with columns o
   - Frequency: yearly
   - Units: metric tons
   - Format: csv file
-  - Source: \href{https://www.fas.usda.gov/data/production/commodity/0111000}{\textcolor{blue}{U.S. Department of Agriculture}}
+  - Source: \href{https://ourworldindata.org/grapher/beef-and-buffalo-meat-production-tonnes}{\textcolor{blue}{Our world in Data}}
 
+From the interactive panel, world beef production from 1961 to 2023 was selected, and displayed data was downloaded from a given link on the website. 
+
+The initial beef production data set was an excel `.csv` file with columns of the Entity (country or region of choice), Code, Year, and beef and buffalo production in tonnes on a single sheet. It was processed as follows:
+-   The data was read and stored as a dataframe, and headers were manually added as the column names.
+-   Data set was verified for missing data - none were present. 
+-   Data frames were saved as the full data.
   
 4. *Socioeconomic factors data set including consumer price index (CPI), industrial production, merchandise exports, and merchandise imports.*
   - Frequency: monthly
@@ -275,15 +281,12 @@ Next, the following models were used to predict methane concentrations without t
 7.    State Space Model - Exponential Smoothing with the `es` function
 8.    State Space Model - BSM with the `StructTS` function
 
-The following models were used to predict methane concentrations with the use of exogenous variables (i.e., using the `xreg` term).
-
 As presented in the variable correlation matrix plot, socioeconomic factors exhibit strong colinearity. To deal with this issue, we propose two forms of method:
 
 a) Use a non-linear model (e.g., Neural Network) to incorporate multiple variables simultaneously.
 b) Include only one variable at a time in the linear model.
 
-
-The models with the best predictor is as follows:
+The following models were used to predict methane concentrations with the use of exogenous variables (i.e., using the `xreg` term).
 
 1.    Arima using `auto.arima` function, using industrial production variable
 2.    Arima with Fourier terms with `auto.arima` function, using industrial production variable
@@ -292,10 +295,10 @@ The models with the best predictor is as follows:
 5.    Neural Network Model with the `nnetar` function, with cpi and export variables
 6.    STL+Arima Model with cpi variable
 7.    State Space Model with industrial production variable
+8.    ARIMAX Model with beef variable (this model generates annual forecast, not monthly forecast, due to the lack of monthly beef production dataset)
 
 
-Given the vast number of possible variable combinations, we created a variable portfolio and the model combination, both involving and not involving exogenous variables. we explored all possible combinations of variables and models by creating a loop function to iterate through all combinations and perform forecasting. The total, we evaluated over 60,000 combinations. The performance of all of the models were examined with the `accuracy` function and the methane test data subset. We therefore choose the variable which has lower `MAPE` score from these loops. All of these forecasts closely follow the trend in methane (Fig. 5). 
-
+Given the vast number of possible variable combinations, we created a variable portfolio and the model combination, both involving and not involving exogenous variables. we explored all possible combinations of variables and models by creating a loop function to iterate through all combinations and perform forecasting. The total, we evaluated over 60,000 combinations. The performance of all of the models were examined with the `accuracy` function and the methane test data subset. We therefore choose the variable which has lower `MAPE` score from these loops. All of these forecasts closely follow the trend in methane (Fig. 5). However, it is noteworthy that all averaged forecast models tend to overestimate the dips in methane concentration.
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
@@ -497,7 +500,6 @@ ggplot(data = tempanom_graph, aes(x = as.Date(date), y = temp_anomaly)) +
   scale_x_date(date_labels = "%b %Y") 
 ```
 
- 
 # Conclusions
 
 Using a variety of statistical models, both involving and not involving exogenous variables of socioeconomic factors, methane concentrations were able to be accurately forecasted. The most successful model (MAPE = 0.0540012) was a average of the following models:
