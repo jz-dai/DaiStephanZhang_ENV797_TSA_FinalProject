@@ -392,6 +392,58 @@ kable(forecast_performance[,1:5],
 
 # Best Model
 
+## Create methane forecast into the future
+```{r}
+#SOCEC
+socec <- read.csv("./Data/Processed/social_economic_factors_monthly.csv")
+socec_all_ts <- ts(socec, 
+                start = c(1983,7), 
+                end = c(2024,11),
+                frequency = 12)
+#ets
+stl_ets_fit <- stlm(methane_train_ts, s.window = "periodic", method = "ets")
+stl_ets_forecast <- forecast(stl_ets_fit, h = 12*3)
+
+#NN
+NN_fit <- nnetar(methane_train_ts, p = 1, P = 7)
+NN_for <- forecast(NN_fit, h = 12*3)
+
+#NN exo
+NN_fit_exo <- nnetar(socec_all_ts[,1], xreg = socec_all_ts[,c(2,4)], p = 0, P = 7,repeats = 100)
+NN_for_exo <- forecast(NN_fit, xreg = socec_all_ts[,c(2,4)], h=12*3)
+
+#NN Fourier
+NN_fourier_fit <- nnetar(methane_train_msts, p = 0, P = 7,
+                 xreg=fourier(methane_train_msts,K=c(2,6)))
+
+NN_fourier_for <- forecast(NN_fourier_fit, h=12*3, xreg=fourier(methane_train_msts,K=c(2,6), h=12*3))
+
+#SSES
+SSES <- es(methane_train_ts,
+           model="ZZZ",
+           h=12*3,
+           holdout=FALSE)
+SSES_for <-forecast(SSES,
+                    h = 12*3, 
+                    interval="prediction")
+
+#SSES Exo
+SSES_exo <- es(socec_all_ts[,1],model="ZZZ",h=12*3,holdout=FALSE, xreg = socec_all_ts[,5])
+SSES_for_exo <-forecast(SSES,h=12*3, interval="prediction", xreg = socec_all_ts[,5])
+
+methane_df <- data.frame("ets" = stl_ets_forecast$mean,
+                         "nn" = NN_for$mean,
+                         "nnExoSE" = NN_for_exo$mean,
+                         "nnFourier" = NN_fourier_for$mean,
+                         "sses" = SSES_for$mean,
+                         "ssesExoSE" = SSES_for_exo$mean)
+
+methane_future <- rowMeans(methane_df, na.rm = TRUE)
+
+```
+
+## Model
+
 ```{r echo=FALSE}
 #autofit arimax
 arimax_fit2 <- auto.arima(tempanom_all_ts,
@@ -399,7 +451,7 @@ arimax_fit2 <- auto.arima(tempanom_all_ts,
 
 #create forecast
 forecast_arimax2 <- forecast(arimax_fit2, 
-                            xreg = tail(methane_all_ts, 12*3), 
+                            xreg = methane_future, 
                             h = 12*3)
 
 #write to csv
