@@ -277,7 +277,24 @@ Next, the following models were used to predict methane concentrations without t
 
 The following models were used to predict methane concentrations with the use of exogenous variables (i.e., using the `xreg` term).
 
-1.    **INSERT HERE WITH SAME FORMAT AS ABOVE**
+As presented in the variable correlation matrix plot, socioeconomic factors exhibit strong colinearity. To deal with this issue, we propose two forms of method:
+
+a) Use a non-linear model (e.g., Neural Network) to incorporate multiple variables simultaneously.
+b) Include only one variable at a time in the linear model.
+
+Given the vast number of possible variable combinations, we created a loop function to iterate through all combinations and perform forecasting. We therefore choose the variable which has the lowest `MAPE` score from these loops.
+
+The models with the best predictor is as follows:
+
+1.    Arima using `auto.arima` function, using industrial production variable
+2.    Arima with Fourier terms with `auto.arima` function, using industrial production variable
+3.    SARIMA using `auto.arima with industrial production variable
+4.    TBATS using `tbats` function, with cpi variable
+5.    Neural Network Model with the `nnetar` function, with cpi and export variables
+6.    STL+Arima Model with cpi variable
+7.    State Space Model with industrial production variable
+
+
 
 All of the above models were averaged together in every possible combination. The performance of all of the models were examined with the `accuracy` function and the methane test data subset. All of the best performing models were an average of multiple models both involving and not involving exogenous variables. All of these forecasts closely follow the trend in methane (Fig. 5). **Expand a little more** 
 
