@@ -385,6 +385,26 @@ residual_model2 <- methane_test$average - model2$x
 checkresiduals(residual_model2)
 ```
 
+The third best model is the combination of 8 models:
+
+a) ARIMA model with Fourier terms,
+b) ETS Model,
+c) Neural Network model,
+d) Neural Network with exogenous variables and seasonality,
+e) Neural Network with Fourier terms,
+f) SARIMA Model with industrial production variable
+g) State Space Exponential Smoothing model,
+h) State Space model with exogenous variables and seasonality, and
+
+
+The residual pattern is again similar to Model 1, but the residual distribution is slightly skewed towards the positive side, with the highest density between 0.0 and 0.5 (Fig. 8). The ACF at lag 1 is also higher than the first best model and is similar to the second best model.
+
+```{r, fig.cap="Residual plot for best model 3"}
+
+residual_model3 <- methane_test$average - model3$x
+
+checkresiduals(residual_model3)
+```
 
 \newpage
 
