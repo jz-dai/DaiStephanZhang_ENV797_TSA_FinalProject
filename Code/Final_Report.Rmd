@@ -440,11 +440,29 @@ ggplot(data = tempanom_graph, aes(x = as.Date(date), y = temp_anomaly)) +
   scale_x_date(date_labels = "%b %Y") 
 ```
 
-```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='80%', fig.cap="Residual analysis of the Temperature anomaly SARIMAX forecast"}
+The residuals of the SARIMAX model appear to imdicate that this is a good fit (Fig. 11). There is no trend in residuals time over. Although, there are some spikes. The ACF plot does not have any significant lags, indicating that autocorrelation is not prevalent. Finally, the histogram indicates that residuals are mostly normal with a slight skew - but nothing alarming. 
 
+```{r echo=FALSE, fig.align='center', message=FALSE, warning=FALSE, out.width='80%', fig.cap="Residual analysis of the Temperature anomaly SARIMAX forecast"}
+#autofit arimax
+methane_test <- read.csv("./Data/Processed/methane_test.csv")
+
+methane_test_ts <-ts(methane_test$average, 
+                start = c(2022,1), 
+                end = c(2024, 11), 
+                frequency = 12)
+
+arimax_fit <- auto.arima(tempanom_train_ts,
+                         xreg = methane_train_ts)
+
+#create forecast
+forecast_arimax <- forecast(arimax_fit, 
+                            xreg = methane_test_ts, 
+                            h = length(methane_test))
+
+checkresiduals(forecast_arimax)
 ```
 
-We used the SARIMAX model to predict temperature for 3 years into the future, using the whole data set as a training data set and assuming that the current climate scenario does not drastically change (Fig. 10). The future project appears to be strongly dominated by the seasonality of methane concentrations with a bias for the stable trend over the past couple of years. It does not seem likely that this forecast will accurately reflect the future temperatures. 
+We used the SARIMAX model to predict temperature for 3 years into the future, using the whole data set as a training data set and assuming that the current climate scenario does not drastically change (Fig. 11). The future project appears to be strongly dominated by the seasonality of methane concentrations with a bias for the stable trend over the past couple of years. It does not seem likely that this forecast will accurately reflect the future temperatures. 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE, fig.cap="Future temperature forecasts based on the sarimax model with exogenous variable of methane."}
 tempanom_future <- read.csv("./Forecasts/temperature_future.csv") %>%
